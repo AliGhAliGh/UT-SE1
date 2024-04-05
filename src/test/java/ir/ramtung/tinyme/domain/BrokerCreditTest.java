@@ -80,7 +80,7 @@ public class BrokerCreditTest {
                 broker.decreaseCreditBy(15_000_000L);
                 broker.increaseCreditBy(15450);
                 var req = EnterOrderRq.createNewOrderRq(1, security.getIsin(), 6, LocalDateTime.now(), Side.BUY, 1,
-                                15451, broker.getBrokerId(), shareholder.getShareholderId(), 0);
+                                15451, broker.getBrokerId(), shareholder.getShareholderId(), 0,0);
                 var res = security.newOrder(req, broker, shareholder, matcher);
                 assertThat(res.outcome()).isEqualTo(MatchingOutcome.NOT_ENOUGH_CREDIT);
                 assertThat(res.trades()).isEmpty();
@@ -94,7 +94,7 @@ public class BrokerCreditTest {
                 broker.decreaseCreditBy(15_000_000L);
                 broker.increaseCreditBy(15450);
                 var req = EnterOrderRq.createNewOrderRq(1, security.getIsin(), 6, LocalDateTime.now(), Side.BUY, 1,
-                                15450, broker.getBrokerId(), shareholder.getShareholderId(), 0);
+                                15450, broker.getBrokerId(), shareholder.getShareholderId(), 0,0);
                 var res = security.newOrder(req, broker, shareholder, matcher);
                 assertThat(res.trades()).isEmpty();
                 assertThat(security.getOrderBook().getBuyQueue()).isNotEmpty();
@@ -106,7 +106,7 @@ public class BrokerCreditTest {
         void increase_credit_check() {
                 orderBook.enqueue(new Order(6, security, Side.SELL, 100, 15000, broker, shareholder));
                 var req = EnterOrderRq.createNewOrderRq(1, security.getIsin(), 7, LocalDateTime.now(), Side.BUY, 110,
-                                15450, 3, shareholder.getShareholderId(), 0);
+                                15450, 3, shareholder.getShareholderId(), 0,0);
                 var res = security.newOrder(req, Broker.builder().credit(10_000_000).brokerId(3).build(), shareholder,
                                 matcher);
                 assertThat(res.outcome()).isEqualTo(MatchingOutcome.EXECUTED);
@@ -119,7 +119,7 @@ public class BrokerCreditTest {
         @Test
         void credit_check_after_two_iceberg_order_round() {
                 var req = EnterOrderRq.createNewOrderRq(1, security.getIsin(), 6, LocalDateTime.now(), Side.BUY, 400,
-                                15805, 3, shareholder.getShareholderId(), 400);
+                                15805, 3, shareholder.getShareholderId(), 400,0);
                 var res = security.newOrder(req, broker, shareholder, matcher);
                 assertThat(res.outcome()).isEqualTo(MatchingOutcome.EXECUTED);
                 assertThat(res.trades().size()).isEqualTo(1);
@@ -129,7 +129,7 @@ public class BrokerCreditTest {
                 System.out.println(orderBook.getBuyQueue().getFirst().getQuantity());
                 var b = Broker.builder().brokerId(4).build();
                 req = EnterOrderRq.createNewOrderRq(2, security.getIsin(), 7, LocalDateTime.now(), Side.SELL, 400,
-                                15805, b.getBrokerId(), shareholder.getShareholderId(), 0);
+                                15805, b.getBrokerId(), shareholder.getShareholderId(), 0,0);
                 res = security.newOrder(req, b, shareholder, matcher);
                 assertThat(res.outcome()).isEqualTo(MatchingOutcome.EXECUTED);
                 assertThat(res.trades().size()).isEqualTo(1);

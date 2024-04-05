@@ -21,7 +21,7 @@ import static org.assertj.core.api.Assertions.*;
 
 @SpringBootTest
 @Import(MockedJMSTestConfig.class)
-public class BrokerCreditTest {
+public class BrokerCreditTest_Alavi {
     private Security security;
     private Broker buyer;
     private Broker seller;
