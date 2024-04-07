@@ -20,7 +20,7 @@ public final class MatchResult {
         return new MatchResult(MatchingOutcome.NOT_ENOUGH_POSITIONS, null, new LinkedList<>());
     }
     public static MatchResult notMEQTrade() {
-        return new MatchResult(MatchingOutcome.NOT_MEQ_TRADE, null, new LinkedList<>());
+        return new MatchResult(MatchingOutcome.NOT_SATISFY_MEQ, null, new LinkedList<>());
     }
     private MatchResult(MatchingOutcome outcome, Order remainder, LinkedList<Trade> trades) {
         this.outcome = outcome;
