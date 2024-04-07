@@ -7,26 +7,21 @@ import java.util.LinkedList;
 import java.util.ListIterator;
 
 @Service
-public class Matcher
-{
-    public MatchResult match(Order newOrder)
-    {
+public class Matcher {
+    public MatchResult match(Order newOrder) {
         OrderBook orderBook = newOrder.getSecurity().getOrderBook();
         LinkedList<Trade> trades = new LinkedList<>();
 
-        while (orderBook.hasOrderOfType(newOrder.getSide().opposite()) && newOrder.getQuantity() > 0)
-        {
+        while (orderBook.hasOrderOfType(newOrder.getSide().opposite()) && newOrder.getQuantity() > 0) {
             Order matchingOrder = orderBook.matchWithFirst(newOrder);
             if (matchingOrder == null)
                 break;
 
             Trade trade = new Trade(newOrder.getSecurity(), matchingOrder.getPrice(), Math.min(newOrder.getQuantity(), matchingOrder.getQuantity()), newOrder, matchingOrder);
-            if (newOrder.getSide() == Side.BUY)
-            {
+            if (newOrder.getSide() == Side.BUY) {
                 if (trade.buyerHasEnoughCredit())
                     trade.decreaseBuyersCredit();
-                else
-                {
+                else {
                     rollbackTrades(newOrder, trades);
                     return MatchResult.notEnoughCredit();
                 }
@@ -34,23 +29,16 @@ public class Matcher
             trade.increaseSellersCredit();
             trades.add(trade);
 
-            if (newOrder.getQuantity() >= matchingOrder.getQuantity())
-            {
+            if (newOrder.getQuantity() >= matchingOrder.getQuantity()) {
                 newOrder.decreaseQuantity(matchingOrder.getQuantity());
                 orderBook.removeFirst(matchingOrder.getSide());
-                if (matchingOrder instanceof IcebergOrder icebergOrder)
-                {
+                if (matchingOrder instanceof IcebergOrder icebergOrder) {
                     icebergOrder.decreaseQuantity(matchingOrder.getQuantity());
                     icebergOrder.replenish();
                     if (icebergOrder.getQuantity() > 0)
-                    {
-                        //TODO
                         orderBook.enqueue(icebergOrder);
-                    }
                 }
-            }
-            else
-            {
+            } else {
                 matchingOrder.decreaseQuantity(newOrder.getQuantity());
                 newOrder.makeQuantityZero();
             }
@@ -58,47 +46,38 @@ public class Matcher
         return MatchResult.executed(newOrder, trades);
     }
 
-    private void rollbackTrades(Order newOrder, LinkedList<Trade> trades)
-    {
+    private void rollbackTrades(Order newOrder, LinkedList<Trade> trades) {
         assert newOrder.getSide() == Side.BUY;
         newOrder.getBroker().increaseCreditBy(trades.stream().mapToLong(Trade::getTradedValue).sum());
         trades.forEach(trade -> trade.getSell().getBroker().decreaseCreditBy(trade.getTradedValue()));
 
         ListIterator<Trade> it = trades.listIterator(trades.size());
-        while (it.hasPrevious())
-        {
+        while (it.hasPrevious()) {
             newOrder.getSecurity().getOrderBook().restoreSellOrder(it.previous().getSell());
         }
     }
 
-    public MatchResult execute(Order order)
-    {
+    public MatchResult execute(Order order, long MEQ) {
         MatchResult result = match(order);
         if (result.outcome() == MatchingOutcome.NOT_ENOUGH_CREDIT)
             return result;
 
-        if (result.remainder().getQuantity() > 0)
-        {
-            if (result.remainder().getMEQ() > order.getQuantity() - result.remainder().getQuantity())
-            {
+        if (result.remainder().getQuantity() > 0) {
+            if (order.getQuantity() - result.remainder().getQuantity() < MEQ) {
                 rollbackTrades(order, result.trades());
-                return MatchResult.notSatisfiedMEQ();
+                return MatchResult.notMEQTrade();
             }
-            if (order.getSide() == Side.BUY)
-            {
-                if (!order.getBroker().hasEnoughCredit((long) order.getPrice() * order.getQuantity()))
-                {
+            if (order.getSide() == Side.BUY) {
+                if (!order.getBroker().hasEnoughCredit(order.getValue())) {
                     rollbackTrades(order, result.trades());
                     return MatchResult.notEnoughCredit();
                 }
-                order.getBroker().decreaseCreditBy((long) order.getPrice() * order.getQuantity());
+                order.getBroker().decreaseCreditBy(order.getValue());
             }
             order.getSecurity().getOrderBook().enqueue(result.remainder());
         }
-        if (!result.trades().isEmpty())
-        {
-            for (Trade trade : result.trades())
-            {
+        if (!result.trades().isEmpty()) {
+            for (Trade trade : result.trades()) {
                 trade.getBuy().getShareholder().incPosition(trade.getSecurity(), trade.getQuantity());
                 trade.getSell().getShareholder().decPosition(trade.getSecurity(), trade.getQuantity());
             }
