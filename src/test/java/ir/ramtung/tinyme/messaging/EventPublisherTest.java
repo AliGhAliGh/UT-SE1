@@ -2,7 +2,6 @@ package ir.ramtung.tinyme.messaging;
 
 import ir.ramtung.tinyme.messaging.event.OrderExecutedEvent;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -31,10 +30,12 @@ public class EventPublisherTest {
     void emptyResponseQueue() {
         long receiveTimeout = jmsTemplate.getReceiveTimeout();
         jmsTemplate.setReceiveTimeout(1000);
-        //noinspection StatementWithEmptyBody
-        while (jmsTemplate.receive(responseQueue) != null) ;
+        // noinspection StatementWithEmptyBody
+        while (jmsTemplate.receive(responseQueue) != null)
+            ;
         jmsTemplate.setReceiveTimeout(receiveTimeout);
     }
+
     @Test
     void response_channel_integration_works() {
         OrderExecutedEvent orderExecutedEvent = new OrderExecutedEvent(1, 0, List.of());
