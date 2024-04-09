@@ -18,6 +18,7 @@ import java.util.List;
 import static ir.ramtung.tinyme.domain.entity.MatchingOutcome.EXECUTED;
 import static ir.ramtung.tinyme.domain.entity.MatchingOutcome.NOT_SATISFY_MEQ;
 import static ir.ramtung.tinyme.domain.entity.Side.BUY;
+import static ir.ramtung.tinyme.domain.entity.Side.SELL;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
@@ -99,5 +100,20 @@ public class MeqTest {
         assertThat(security.getOrderBook().getBuyQueue().size()).isEqualTo(6);
         assertThat(security.getOrderBook().getSellQueue().size()).isEqualTo(4);
         assertThat(broker.getCredit()).isEqualTo(98_420_000);
+    }
+
+    @Test
+    void meq_is_not_examined_when_updating_order() {
+        var req1 = EnterOrderRq.createNewOrderRq(5, security.getIsin(), 6, LocalDateTime.now(), SELL, 300, 15600,
+                broker.getBrokerId(), shareholder.getShareholderId(), 0, 250);
+        var req2 = EnterOrderRq.createUpdateOrderRq(6, security.getIsin(), 6, LocalDateTime.now(), SELL, 300, 15600,
+                broker.getBrokerId(), shareholder.getShareholderId(), 0, 250);
+        var result1 = security.newOrder(req1, broker, shareholder, matcher);
+        assertThat(result1.outcome()).isEqualTo(NOT_SATISFY_MEQ);
+        assertThat(broker.getCredit()).isEqualTo(100_000_000L);
+        var result2 = security.newOrder(req2, broker, shareholder, matcher);
+        assertThat(result2.outcome()).isEqualTo(EXECUTED);
+        assertThat(result2.trades()).isNotEmpty();
+        assertThat(result2.remainder().getQuantity()).isEqualTo(100);
     }
 }
