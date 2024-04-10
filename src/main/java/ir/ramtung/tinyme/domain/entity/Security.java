@@ -29,13 +29,13 @@ public class Security {
         Order order;
         if (enterOrderRq.getPeakSize() == 0)
             order = new Order(enterOrderRq.getOrderId(), this, enterOrderRq.getSide(),
-                    enterOrderRq.getQuantity(), enterOrderRq.getPrice(), broker, shareholder, enterOrderRq.getEntryTime(), enterOrderRq.getMinimumExecutionQuantity());
+                    enterOrderRq.getQuantity(), enterOrderRq.getPrice(), broker, shareholder, enterOrderRq.getEntryTime());
         else
             order = new IcebergOrder(enterOrderRq.getOrderId(), this, enterOrderRq.getSide(),
                     enterOrderRq.getQuantity(), enterOrderRq.getPrice(), broker, shareholder,
-                    enterOrderRq.getEntryTime(), enterOrderRq.getPeakSize(), enterOrderRq.getMinimumExecutionQuantity());
+                    enterOrderRq.getEntryTime(), enterOrderRq.getPeakSize());
 
-        return matcher.execute(order);
+        return matcher.execute(order, enterOrderRq.getMinimumExecutionQuantity());
     }
 
     public void deleteOrder(DeleteOrderRq deleteOrderRq) throws InvalidRequestException {
@@ -76,9 +76,11 @@ public class Security {
             }
             return MatchResult.executed(null, List.of());
         }
+        else
+            order.markAsNew();
 
         orderBook.removeByOrderId(updateOrderRq.getSide(), updateOrderRq.getOrderId());
-        MatchResult matchResult = matcher.execute(order);
+        MatchResult matchResult = matcher.execute(order, updateOrderRq.getMinimumExecutionQuantity());
         if (matchResult.outcome() != MatchingOutcome.EXECUTED) {
             orderBook.enqueue(originalOrder);
             if (updateOrderRq.getSide() == Side.BUY) {

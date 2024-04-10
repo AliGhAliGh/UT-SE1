@@ -16,13 +16,11 @@ public final class MatchResult {
     public static MatchResult notEnoughCredit() {
         return new MatchResult(MatchingOutcome.NOT_ENOUGH_CREDIT, null, new LinkedList<>());
     }
-
-    public static MatchResult notSatisfiedMEQ() {
-        return new MatchResult(MatchingOutcome.NOT_SATISFIED_MEQ, null, new LinkedList<>());
-    }
-
     public static MatchResult notEnoughPositions() {
         return new MatchResult(MatchingOutcome.NOT_ENOUGH_POSITIONS, null, new LinkedList<>());
+    }
+    public static MatchResult notMEQTrade() {
+        return new MatchResult(MatchingOutcome.NOT_SATISFY_MEQ, null, new LinkedList<>());
     }
     private MatchResult(MatchingOutcome outcome, Order remainder, LinkedList<Trade> trades) {
         this.outcome = outcome;

@@ -39,6 +39,10 @@ public class Trade {
         sell.getBroker().increaseCreditBy(getTradedValue());
     }
 
+    public void decreaseSellersCredit() {
+        sell.getBroker().decreaseCreditBy(getTradedValue());
+    }
+
     public void decreaseBuyersCredit() {
         buy.getBroker().decreaseCreditBy(getTradedValue());
     }
