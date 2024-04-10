@@ -19,12 +19,13 @@ import java.util.List;
 import static ir.ramtung.tinyme.domain.entity.MatchingOutcome.EXECUTED;
 import static ir.ramtung.tinyme.domain.entity.MatchingOutcome.NOT_SATISFY_MEQ;
 import static ir.ramtung.tinyme.domain.entity.Side.BUY;
+import static ir.ramtung.tinyme.domain.entity.Side.SELL;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
 @Import(MockedJMSTestConfig.class)
 @DirtiesContext
-public class MeqTest {
+public class MEQTest {
     private Security security;
     private Broker broker;
     private Shareholder shareholder;
@@ -100,5 +101,25 @@ public class MeqTest {
         assertThat(security.getOrderBook().getBuyQueue().size()).isEqualTo(6);
         assertThat(security.getOrderBook().getSellQueue().size()).isEqualTo(4);
         assertThat(broker.getCredit()).isEqualTo(98_420_000);
+    }
+
+    @Test
+    void old_buy_order_will_accept_with_meq() {
+        var req = EnterOrderRq.createNewOrderRq(4, security.getIsin(), 14, LocalDateTime.now(), BUY, 300, 15800,
+                broker.getBrokerId(), shareholder.getShareholderId(), 0, 200);
+        var result = security.newOrder(req, broker, shareholder, matcher);
+        assertThat(result.outcome()).isEqualTo(EXECUTED);
+        assertThat(result.trades()).isNotEmpty();
+        assertThat(security.getOrderBook().getBuyQueue().size()).isEqualTo(6);
+        assertThat(security.getOrderBook().getSellQueue().size()).isEqualTo(4);
+        assertThat(broker.getCredit()).isEqualTo(98_420_000);
+        req = EnterOrderRq.createNewOrderRq(4, security.getIsin(), 14, LocalDateTime.now(), SELL, 100, 15800,
+                broker.getBrokerId(), shareholder.getShareholderId(), 0, 100);
+        result = security.newOrder(req, broker, shareholder, matcher);
+        assertThat(result.outcome()).isEqualTo(EXECUTED);
+        assertThat(result.trades()).isNotEmpty();
+        assertThat(security.getOrderBook().getBuyQueue().size()).isEqualTo(5);
+        assertThat(security.getOrderBook().getSellQueue().size()).isEqualTo(4);
+        assertThat(broker.getCredit()).isEqualTo(100_000_000);
     }
 }
