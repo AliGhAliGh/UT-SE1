@@ -102,6 +102,11 @@ public class OrderHandler {
             errors.add(Message.ORDER_MEQ_NOT_POSITIVE);
         if (enterOrderRq.getQuantity() < enterOrderRq.getMinimumExecutionQuantity())
             errors.add(Message.ORDER_QUANTITY_SMALLER_THAN_MEQ);
+        if (enterOrderRq.getPeakSize() > 0 && enterOrderRq.getStopPrice() > 0)
+            errors.add(Message.ICEBERG_WITH_STOP_LIMIT_ORDER);
+        if (enterOrderRq.getMinimumExecutionQuantity() > 0 && enterOrderRq.getStopPrice() > 0)
+            errors.add(Message.MEQ_WITH_STOP_LIMIT_ORDER);
+
         Security security = securityRepository.findSecurityByIsin(enterOrderRq.getSecurityIsin());
         if (security == null)
             errors.add(Message.UNKNOWN_SECURITY_ISIN);
@@ -111,6 +116,7 @@ public class OrderHandler {
             if (enterOrderRq.getPrice() % security.getTickSize() != 0)
                 errors.add(Message.PRICE_NOT_MULTIPLE_OF_TICK_SIZE);
         }
+
         if (brokerRepository.findBrokerById(enterOrderRq.getBrokerId()) == null)
             errors.add(Message.UNKNOWN_BROKER_ID);
         if (shareholderRepository.findShareholderById(enterOrderRq.getShareholderId()) == null)

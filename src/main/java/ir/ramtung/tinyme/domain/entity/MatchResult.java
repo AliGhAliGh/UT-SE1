@@ -16,12 +16,19 @@ public final class MatchResult {
     public static MatchResult notEnoughCredit() {
         return new MatchResult(MatchingOutcome.NOT_ENOUGH_CREDIT, null, new LinkedList<>());
     }
+
     public static MatchResult notEnoughPositions() {
         return new MatchResult(MatchingOutcome.NOT_ENOUGH_POSITIONS, null, new LinkedList<>());
     }
+
+    public static MatchResult disabled() {
+        return new MatchResult(MatchingOutcome.DISABLED, null, new LinkedList<>());
+    }
+
     public static MatchResult notMEQTrade() {
         return new MatchResult(MatchingOutcome.NOT_SATISFY_MEQ, null, new LinkedList<>());
     }
+
     private MatchResult(MatchingOutcome outcome, Order remainder, LinkedList<Trade> trades) {
         this.outcome = outcome;
         this.remainder = remainder;
@@ -31,6 +38,7 @@ public final class MatchResult {
     public MatchingOutcome outcome() {
         return outcome;
     }
+
     public Order remainder() {
         return remainder;
     }
@@ -41,8 +49,10 @@ public final class MatchResult {
 
     @Override
     public boolean equals(Object obj) {
-        if (obj == this) return true;
-        if (obj == null || obj.getClass() != this.getClass()) return false;
+        if (obj == this)
+            return true;
+        if (obj == null || obj.getClass() != this.getClass())
+            return false;
         var that = (MatchResult) obj;
         return Objects.equals(this.remainder, that.remainder) &&
                 Objects.equals(this.trades, that.trades);
@@ -59,6 +69,5 @@ public final class MatchResult {
                 "remainder=" + remainder + ", " +
                 "trades=" + trades + ']';
     }
-
 
 }

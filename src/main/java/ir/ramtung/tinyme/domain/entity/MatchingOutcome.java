@@ -4,5 +4,6 @@ public enum MatchingOutcome {
     EXECUTED,
     NOT_ENOUGH_CREDIT,
     NOT_ENOUGH_POSITIONS,
-    NOT_SATISFY_MEQ
+    NOT_SATISFY_MEQ,
+    DISABLED
 }

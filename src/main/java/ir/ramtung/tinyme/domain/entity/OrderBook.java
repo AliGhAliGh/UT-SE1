@@ -3,7 +3,6 @@ package ir.ramtung.tinyme.domain.entity;
 import lombok.Getter;
 
 import java.util.LinkedList;
-import java.util.List;
 import java.util.ListIterator;
 
 @Getter
@@ -17,7 +16,7 @@ public class OrderBook {
     }
 
     public void enqueue(Order order) {
-        List<Order> queue = getQueue(order.getSide());
+        var queue = getQueue(order.getSide());
         ListIterator<Order> it = queue.listIterator();
         while (it.hasNext()) {
             if (order.queuesBefore(it.next())) {
@@ -56,10 +55,19 @@ public class OrderBook {
 
     public Order matchWithFirst(Order newOrder) {
         var queue = getQueue(newOrder.getSide().opposite());
-        if (newOrder.matches(queue.getFirst()))
-            return queue.getFirst();
+        if (newOrder.matches(getFirstEnabled(queue)))
+            return getFirstEnabled(queue);
         else
             return null;
+    }
+
+    private Order getFirstEnabled(LinkedList<Order> queue) {
+        for (Order order : queue) {
+            if (order instanceof StopLimitOrder sl && !sl.active)
+                continue;
+            return order;
+        }
+        return null;
     }
 
     public void putBack(Order order) {

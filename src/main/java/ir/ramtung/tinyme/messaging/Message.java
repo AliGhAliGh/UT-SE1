@@ -17,4 +17,7 @@ public class Message {
     public static final String ORDER_MEQ_NOT_POSITIVE = "Order MEQ is not-positive";
     public static final String ORDER_QUANTITY_SMALLER_THAN_MEQ = "Order quantity is smaller that MEQ";
     public static final String ORDER_NOT_SATISFIED_MEQ = "Order is not satisfied MEQ";
+    public static final String ACTIVE_ORDER_STOP_LIMIT_UPDATE = "Active Orders can't update their stop limit!";
+    public static final String MEQ_WITH_STOP_LIMIT_ORDER = "Stop limit orders can't have Minimum execution quantity!";
+    public static final String ICEBERG_WITH_STOP_LIMIT_ORDER = "Stop limit orders can't be an iceberg order!";
 }
