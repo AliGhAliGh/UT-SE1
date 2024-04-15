@@ -10,8 +10,8 @@ import java.time.LocalDateTime;
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 public class StopLimitOrder extends Order {
-    int stopPrice;
-    boolean active;
+    private final int stopPrice;
+    private boolean active;
 
     public StopLimitOrder(long orderId, Security security, Side side, int quantity, int price, Broker broker,
             Shareholder shareholder, LocalDateTime entryTime, OrderStatus status, int stopPrice) {
@@ -39,13 +39,16 @@ public class StopLimitOrder extends Order {
     }
 
     public boolean checkActivation(int lastTradePrice) {
-        if ((this.side == Side.BUY && this.stopPrice <= lastTradePrice)
-                || (this.side == Side.SELL && this.stopPrice >= lastTradePrice)) {
-            this.active = true;
-            return true;
-        } else {
-            this.active = false;
-            return false;
-        }
+        return (this.side == Side.BUY && this.stopPrice <= lastTradePrice)
+                || (this.side == Side.SELL && this.stopPrice >= lastTradePrice);
     }
+
+    public void activate() {
+        active = true;
+    }
+
+    public void deactivate() {
+        active = false;
+    }
+
 }

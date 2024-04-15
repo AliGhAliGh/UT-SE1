@@ -66,14 +66,6 @@ public class Order {
                 OrderStatus.SNAPSHOT);
     }
 
-    public void Disable() {
-        status = OrderStatus.DISABLED;
-    }
-
-    public void Enable() {
-        status = OrderStatus.NEW;
-    }
-
     public boolean matches(Order other) {
         if (side == Side.BUY)
             return price >= other.price;
@@ -89,10 +81,6 @@ public class Order {
 
     public void makeQuantityZero() {
         quantity = 0;
-    }
-
-    public boolean isEnabled() {
-        return status != OrderStatus.DISABLED;
     }
 
     public boolean queuesBefore(Order order) {

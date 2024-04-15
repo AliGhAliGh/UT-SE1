@@ -42,8 +42,9 @@ public class Security {
                     enterOrderRq.getEntryTime(), enterOrderRq.getPeakSize());
 
         if (order instanceof StopLimitOrder sl && !sl.checkActivation(matcher.getLastPriceExecuted())) {
+            sl.deactivate();
             orderBook.enqueue(order);
-            return MatchResult.disabled();
+            return MatchResult.deactivated();
         }
 
         return matcher.execute(order, enterOrderRq.getMinimumExecutionQuantity());
@@ -66,7 +67,8 @@ public class Security {
             throw new InvalidRequestException(Message.INVALID_PEAK_SIZE);
         if (!(order instanceof IcebergOrder) && updateOrderRq.getPeakSize() != 0)
             throw new InvalidRequestException(Message.CANNOT_SPECIFY_PEAK_SIZE_FOR_A_NON_ICEBERG_ORDER);
-        if (updateOrderRq.getStopPrice() > 0 && order.isEnabled())
+        if (order instanceof StopLimitOrder sl && sl.isActive() && updateOrderRq.getStopPrice() != sl.getStopPrice() &&
+                updateOrderRq.getStopPrice() > 0)
             throw new InvalidRequestException(Message.ACTIVE_ORDER_STOP_LIMIT_UPDATE);
 
         if (updateOrderRq.getSide() == Side.SELL &&

@@ -77,4 +77,11 @@ public class EnterOrderRq {
         return new EnterOrderRq(OrderEntryType.UPDATE_ORDER, requestId, securityIsin, orderId, entryTime, side,
                 quantity, price, brokerId, shareholderId, peakSize, 0, 0);
     }
+
+    public static EnterOrderRq createUpdateOrderRq(long requestId, String securityIsin, long orderId,
+                                                   LocalDateTime entryTime, Side side, int quantity, int price, long brokerId, long shareholderId,
+                                                   int peakSize, int stopPrice) {
+        return new EnterOrderRq(OrderEntryType.UPDATE_ORDER, requestId, securityIsin, orderId, entryTime, side,
+                quantity, price, brokerId, shareholderId, peakSize, 0, stopPrice);
+    }
 }

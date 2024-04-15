@@ -9,14 +9,19 @@ import java.util.ListIterator;
 public class OrderBook {
     private final LinkedList<Order> buyQueue;
     private final LinkedList<Order> sellQueue;
+    private final LinkedList<Order> deactivatedQueue;
 
     public OrderBook() {
+        deactivatedQueue = new LinkedList<>();
         buyQueue = new LinkedList<>();
         sellQueue = new LinkedList<>();
     }
 
     public void enqueue(Order order) {
-        var queue = getQueue(order.getSide());
+        addToQueue(getQueue(order.getSide()), order);
+    }
+
+    private void addToQueue(LinkedList<Order> queue, Order order) {
         ListIterator<Order> it = queue.listIterator();
         while (it.hasNext()) {
             if (order.queuesBefore(it.next())) {
@@ -26,6 +31,10 @@ public class OrderBook {
         }
         order.queue();
         it.add(order);
+    }
+
+    public void enqueueDeactivated(Order order) {
+        addToQueue(deactivatedQueue, order);
     }
 
     private LinkedList<Order> getQueue(Side side) {
@@ -55,19 +64,10 @@ public class OrderBook {
 
     public Order matchWithFirst(Order newOrder) {
         var queue = getQueue(newOrder.getSide().opposite());
-        if (newOrder.matches(getFirstEnabled(queue)))
-            return getFirstEnabled(queue);
+        if (newOrder.matches(queue.getFirst()))
+            return queue.getFirst();
         else
             return null;
-    }
-
-    private Order getFirstEnabled(LinkedList<Order> queue) {
-        for (Order order : queue) {
-            if (order instanceof StopLimitOrder sl && !sl.active)
-                continue;
-            return order;
-        }
-        return null;
     }
 
     public void putBack(Order order) {
@@ -94,5 +94,15 @@ public class OrderBook {
                 .filter(order -> order.getShareholder().equals(shareholder))
                 .mapToInt(Order::getTotalQuantity)
                 .sum();
+    }
+
+    public void refreshAllQueue(int lastPrice){
+//        var it = deactivatedQueue.listIterator();
+//        while (it.hasNext()) {
+//            if (it.next().getOrderId() == orderId) {
+//                it.remove();
+//                return true;
+//            }
+//        }
     }
 }

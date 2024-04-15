@@ -97,8 +97,9 @@ public class Matcher {
                 trade.getBuy().getShareholder().incPosition(trade.getSecurity(), trade.getQuantity());
                 trade.getSell().getShareholder().decPosition(trade.getSecurity(), trade.getQuantity());
             }
+            lastPriceExecuted = result.trades().getLast().getPrice();
+            order.getSecurity().getOrderBook().refreshAllQueue(lastPriceExecuted);
         }
-        lastPriceExecuted = result.trades().stream().mapToInt(c -> c.getPrice()).max().orElse(lastPriceExecuted);
         return result;
     }
 }

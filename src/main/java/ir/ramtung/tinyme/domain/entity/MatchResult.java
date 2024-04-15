@@ -21,8 +21,8 @@ public final class MatchResult {
         return new MatchResult(MatchingOutcome.NOT_ENOUGH_POSITIONS, null, new LinkedList<>());
     }
 
-    public static MatchResult disabled() {
-        return new MatchResult(MatchingOutcome.DISABLED, null, new LinkedList<>());
+    public static MatchResult deactivated() {
+        return new MatchResult(MatchingOutcome.DEACTIVATED, null, new LinkedList<>());
     }
 
     public static MatchResult notMEQTrade() {
