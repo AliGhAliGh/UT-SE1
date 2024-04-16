@@ -34,7 +34,15 @@ public class OrderBook {
     }
 
     public void enqueueDeactivated(StopLimitOrder order) {
-        addToQueue(deactivatedQueue, order);
+        ListIterator<StopLimitOrder> it = deactivatedQueue.listIterator();
+        while (it.hasNext()) {
+            if (order.queuesBefore(it.next())) {
+                it.previous();
+                break;
+            }
+        }
+        order.queue();
+        it.add(order);
     }
 
     private LinkedList<Order> getQueue(Side side) {
@@ -100,10 +108,10 @@ public class OrderBook {
         var it = deactivatedQueue.listIterator();
         while (it.hasNext()) {
             var order = it.next();
-
             if (order.checkActivation (lastPrice)) {
                 order.activate();;
-                enqueue(order);
+                enqueueDeactivated(order);
+
                 it.remove();
             }
         }

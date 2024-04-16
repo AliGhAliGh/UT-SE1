@@ -27,7 +27,7 @@ public class Security {
             return MatchResult.notEnoughPositions();
 
         Order order;
-        if (enterOrderRq.getPeakSize() == 0)
+        if (enterOrderRq.getPeakSize() == 0 && enterOrderRq.getStopPrice() == 0)
             order = new Order(enterOrderRq.getOrderId(), this, enterOrderRq.getSide(),
                     enterOrderRq.getQuantity(), enterOrderRq.getPrice(), broker, shareholder,
                     enterOrderRq.getEntryTime());
@@ -43,7 +43,7 @@ public class Security {
 
         if (order instanceof StopLimitOrder sl && !sl.checkActivation(matcher.getLastPriceExecuted())) {
             sl.deactivate();
-            orderBook.enqueue(order);
+            orderBook.enqueueDeactivated(sl);
             return MatchResult.deactivated();
         }
 
