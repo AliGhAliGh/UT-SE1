@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @EqualsAndHashCode(callSuper = false)
 @AllArgsConstructor
 @NoArgsConstructor
-public class OrderActivatedEvent {
+public class OrderActivatedEvent extends Event {
     private long requestId;
     private long orderId;
 }

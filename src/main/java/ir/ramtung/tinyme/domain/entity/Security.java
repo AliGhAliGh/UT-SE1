@@ -42,12 +42,21 @@ public class Security {
                     enterOrderRq.getEntryTime(), enterOrderRq.getPeakSize());
 
         if (order instanceof StopLimitOrder sl && !sl.checkActivation(matcher.getLastPriceExecuted())) {
-            sl.deactivate();
             orderBook.enqueueDeactivated(sl);
             return MatchResult.deactivated();
         }
 
         return matcher.execute(order, enterOrderRq.getMinimumExecutionQuantity());
+    }
+
+    public MatchResult activateOrder(EnterOrderRq enterOrderRq, Broker broker, Shareholder shareholder,
+            Matcher matcher) {
+
+        Order order = new Order(enterOrderRq.getOrderId(), this, enterOrderRq.getSide(),
+                enterOrderRq.getQuantity(), enterOrderRq.getPrice(), broker, shareholder,
+                enterOrderRq.getEntryTime());
+
+        return matcher.execute(order, 0);
     }
 
     public void deleteOrder(DeleteOrderRq deleteOrderRq) throws InvalidRequestException {

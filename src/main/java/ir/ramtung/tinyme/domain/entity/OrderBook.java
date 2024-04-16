@@ -2,6 +2,9 @@ package ir.ramtung.tinyme.domain.entity;
 
 import lombok.Getter;
 
+import static ir.ramtung.tinyme.domain.entity.Side.BUY;
+import static ir.ramtung.tinyme.domain.entity.Side.SELL;
+
 import java.util.LinkedList;
 import java.util.ListIterator;
 
@@ -9,7 +12,7 @@ import java.util.ListIterator;
 public class OrderBook {
     private final LinkedList<Order> buyQueue;
     private final LinkedList<Order> sellQueue;
-    private final LinkedList<StopLimitOrder> deactivatedQueue;
+    private final LinkedList<Order> deactivatedQueue;
 
     public OrderBook() {
         deactivatedQueue = new LinkedList<>();
@@ -19,6 +22,7 @@ public class OrderBook {
 
     public void enqueue(Order order) {
         addToQueue(getQueue(order.getSide()), order);
+        order.queue();
     }
 
     private void addToQueue(LinkedList<Order> queue, Order order) {
@@ -29,20 +33,12 @@ public class OrderBook {
                 break;
             }
         }
-        order.queue();
         it.add(order);
     }
 
     public void enqueueDeactivated(StopLimitOrder order) {
-        ListIterator<StopLimitOrder> it = deactivatedQueue.listIterator();
-        while (it.hasNext()) {
-            if (order.queuesBefore(it.next())) {
-                it.previous();
-                break;
-            }
-        }
-        order.queue();
-        it.add(order);
+        addToQueue(deactivatedQueue, order);
+        order.deactivate();
     }
 
     private LinkedList<Order> getQueue(Side side) {
@@ -101,17 +97,20 @@ public class OrderBook {
         return sellQueue.stream()
                 .filter(order -> order.getShareholder().equals(shareholder))
                 .mapToInt(Order::getTotalQuantity)
-                .sum();
+                .sum() +
+                deactivatedQueue.stream()
+                        .filter(order -> order.getSide() == SELL && order.getShareholder().equals(shareholder))
+                        .mapToInt(Order::getTotalQuantity)
+                        .sum();
     }
 
-    public void refreshAllQueue(int lastPrice){
+    public void refreshAllQueue(int lastPrice) {
         var it = deactivatedQueue.listIterator();
         while (it.hasNext()) {
-            var order = it.next();
-            if (order.checkActivation (lastPrice)) {
-                order.activate();;
-                enqueueDeactivated(order);
-
+            var order = (StopLimitOrder) it.next();
+            if (order.checkActivation(lastPrice)) {
+                order.activate();
+                enqueue(order);
                 it.remove();
             }
         }
