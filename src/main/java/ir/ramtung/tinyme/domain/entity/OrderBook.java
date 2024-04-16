@@ -9,7 +9,7 @@ import java.util.ListIterator;
 public class OrderBook {
     private final LinkedList<Order> buyQueue;
     private final LinkedList<Order> sellQueue;
-    private final LinkedList<Order> deactivatedQueue;
+    private final LinkedList<StopLimitOrder> deactivatedQueue;
 
     public OrderBook() {
         deactivatedQueue = new LinkedList<>();
@@ -33,7 +33,7 @@ public class OrderBook {
         it.add(order);
     }
 
-    public void enqueueDeactivated(Order order) {
+    public void enqueueDeactivated(StopLimitOrder order) {
         addToQueue(deactivatedQueue, order);
     }
 
@@ -97,12 +97,15 @@ public class OrderBook {
     }
 
     public void refreshAllQueue(int lastPrice){
-//        var it = deactivatedQueue.listIterator();
-//        while (it.hasNext()) {
-//            if (it.next().getOrderId() == orderId) {
-//                it.remove();
-//                return true;
-//            }
-//        }
+        var it = deactivatedQueue.listIterator();
+        while (it.hasNext()) {
+            var order = it.next();
+
+            if (order.checkActivation (lastPrice)) {
+                order.activate();;
+                enqueue(order);
+                it.remove();
+            }
+        }
     }
 }
