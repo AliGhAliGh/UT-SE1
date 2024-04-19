@@ -3,7 +3,15 @@ package ir.ramtung.tinyme.domain;
 import ir.ramtung.tinyme.config.MockedJMSTestConfig;
 import ir.ramtung.tinyme.domain.entity.*;
 import ir.ramtung.tinyme.domain.service.Matcher;
+import ir.ramtung.tinyme.domain.service.OrderHandler;
+import ir.ramtung.tinyme.messaging.EventPublisher;
+import ir.ramtung.tinyme.messaging.event.OrderAcceptedEvent;
+import ir.ramtung.tinyme.messaging.event.OrderActivatedEvent;
 import ir.ramtung.tinyme.messaging.request.EnterOrderRq;
+import ir.ramtung.tinyme.repository.BrokerRepository;
+import ir.ramtung.tinyme.repository.SecurityRepository;
+import ir.ramtung.tinyme.repository.ShareholderRepository;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,11 +23,10 @@ import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 
-import static ir.ramtung.tinyme.domain.entity.MatchingOutcome.DEACTIVATED;
-import static ir.ramtung.tinyme.domain.entity.MatchingOutcome.EXECUTED;
 import static ir.ramtung.tinyme.domain.entity.Side.BUY;
 import static ir.ramtung.tinyme.domain.entity.Side.SELL;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.verify;
 
 @SpringBootTest
 @Import(MockedJMSTestConfig.class)
@@ -31,22 +38,34 @@ public class StopPriceTest {
     private OrderBook orderBook;
     private List<Order> orders;
     @Autowired
-    private Matcher matcher;
+    OrderHandler orderHandler;
+    @Autowired
+    EventPublisher eventPublisher;
+    @Autowired
+    SecurityRepository securityRepository;
+    @Autowired
+    BrokerRepository brokerRepository;
+    @Autowired
+    ShareholderRepository shareholderRepository;
 
     @BeforeEach
     void setupOrderBook() {
         security = Security.builder().build();
-        brokerSell = Broker.builder().credit(100_000_000L).build();
-        brokerBuy = Broker.builder().credit(100_000_000L).build();
+        brokerSell = Broker.builder().brokerId(2).credit(100_000_000L).build();
+        brokerBuy = Broker.builder().brokerId(1).credit(100_000_000L).build();
         shareholder = Shareholder.builder().build();
         shareholder.incPosition(security, 100_000);
+
+        securityRepository.clear();
+        brokerRepository.clear();
+        shareholderRepository.clear();
+        securityRepository.addSecurity(security);
+        shareholderRepository.addShareholder(shareholder);
+        brokerRepository.addBroker(brokerBuy);
+        brokerRepository.addBroker(brokerSell);
+
         orderBook = security.getOrderBook();
         orders = Arrays.asList(
-                new Order(1, security, BUY, 200, 15700, brokerBuy, shareholder),
-                new Order(2, security, BUY, 43, 15500, brokerBuy, shareholder),
-                new Order(3, security, BUY, 445, 15450, brokerBuy, shareholder),
-                new Order(4, security, BUY, 526, 15450, brokerBuy, shareholder),
-                new Order(5, security, BUY, 1000, 15400, brokerBuy, shareholder),
                 new Order(6, security, Side.SELL, 200, 15800, brokerSell, shareholder),
                 new Order(7, security, Side.SELL, 285, 15810, brokerSell, shareholder),
                 new Order(8, security, Side.SELL, 800, 15810, brokerSell, shareholder),
@@ -56,15 +75,21 @@ public class StopPriceTest {
     }
 
     @Test
-    public void crossing_the_stop_price_will_activate_order() {
-        var req2 = EnterOrderRq.createNewOrderRq(2, security.getIsin(), 11, LocalDateTime.now(), BUY, 2, 15600,
+    public void verify_publixhed_messages() {
+        var req = EnterOrderRq.createNewOrderRq(2, security.getIsin(), 11, LocalDateTime.now(), BUY, 2, 15600,
                 brokerBuy.getBrokerId(), shareholder.getShareholderId(), 0, 0, 15750);
-        var result = security.newOrder(req2, brokerBuy, shareholder, matcher);
-        assertThat(result.outcome()).isEqualTo(DEACTIVATED);
-        req2 = EnterOrderRq.createNewOrderRq(3, security.getIsin(), 12, LocalDateTime.now(), BUY, 2, 15800,
+        orderHandler.handleEnterOrder(req);
+        req = EnterOrderRq.createNewOrderRq(3, security.getIsin(), 12, LocalDateTime.now(), BUY, 2, 15800,
                 brokerBuy.getBrokerId(), shareholder.getShareholderId(), 0);
-        result = security.newOrder(req2, brokerBuy, shareholder, matcher);
-        assertThat(result.outcome()).isEqualTo(MatchingOutcome.EXECUTED);
+        orderHandler.handleEnterOrder(req);
+        verify(eventPublisher).publish(new OrderActivatedEvent(2, 11));
         assertThat(brokerBuy.getCredit()).isEqualTo(100_000_000 - 15800 * 2 - 15600 * 2);
+        assertThat(orderBook.getBuyQueue().size()).isEqualTo(1);
+        req = EnterOrderRq.createNewOrderRq(4, security.getIsin(), 13, LocalDateTime.now(), SELL, 3, 15600,
+                brokerSell.getBrokerId(), shareholder.getShareholderId(), 0);
+        orderHandler.handleEnterOrder(req);
+        verify(eventPublisher).publish(new OrderAcceptedEvent(4, 13));
+        assertThat(brokerBuy.getCredit()).isEqualTo(100_000_000 - 15800 * 2 - 15600 * 2);
+        assertThat(orderBook.getBuyQueue().size()).isEqualTo(0);
     }
 }

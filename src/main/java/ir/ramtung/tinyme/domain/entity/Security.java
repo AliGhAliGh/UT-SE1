@@ -49,10 +49,6 @@ public class Security {
         return matcher.execute(order, enterOrderRq.getMinimumExecutionQuantity());
     }
 
-    public MatchResult activateOrder(StopLimitOrder order, Matcher matcher) {
-        return matcher.execute(order, 0);
-    }
-
     public void deleteOrder(DeleteOrderRq deleteOrderRq) throws InvalidRequestException {
         Order order = orderBook.findByOrderId(deleteOrderRq.getSide(), deleteOrderRq.getOrderId());
         if (order == null)

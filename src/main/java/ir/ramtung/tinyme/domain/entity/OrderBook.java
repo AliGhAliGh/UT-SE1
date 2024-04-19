@@ -7,7 +7,7 @@ import static ir.ramtung.tinyme.domain.entity.Side.SELL;
 import java.util.LinkedList;
 import java.util.ListIterator;
 
-import ir.ramtung.tinyme.domain.service.OrderHandler;
+import ir.ramtung.tinyme.domain.service.Matcher;
 
 @Getter
 public class OrderBook {
@@ -110,15 +110,16 @@ public class OrderBook {
                         .sum();
     }
 
-    public void refreshAllQueue(int lastPrice, OrderHandler orderHandler) {
+    public MatchResult refreshAllQueue(Matcher matcher) {
         var it = deactivatedQueue.listIterator();
         while (it.hasNext()) {
             var order = (StopLimitOrder) it.next();
-            if (order.checkActivation(lastPrice)) {
+            if (order.checkActivation(matcher.getLastPriceExecuted())) {
                 it.remove();
-                orderHandler.activateOrder(order);
-                return;
+                order.activate();
+                return matcher.execute(order, 0);
             }
         }
+        return null;
     }
 }

@@ -3,7 +3,6 @@ package ir.ramtung.tinyme.domain.service;
 import ir.ramtung.tinyme.domain.entity.*;
 import lombok.Getter;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.LinkedList;
@@ -12,12 +11,6 @@ import java.util.ListIterator;
 @Service
 @Getter
 public class Matcher {
-    private OrderHandler orderHandler;
-
-    public Matcher(OrderHandler orderHandler) {
-        this.orderHandler = orderHandler;
-    }
-
     private int lastPriceExecuted = 0;
 
     public MatchResult match(Order newOrder) {
@@ -105,7 +98,6 @@ public class Matcher {
                 trade.getSell().getShareholder().decPosition(trade.getSecurity(), trade.getQuantity());
             }
             lastPriceExecuted = result.trades().getLast().getPrice();
-            order.getSecurity().getOrderBook().refreshAllQueue(lastPriceExecuted, orderHandler);
         }
         return result;
     }

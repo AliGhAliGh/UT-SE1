@@ -35,15 +35,6 @@ public class OrderHandler {
         this.matcher = matcher;
     }
 
-    public void activateOrder(StopLimitOrder order) {
-        var matchResult = order.getSecurity().activateOrder(order, matcher);
-        eventPublisher.publish(new OrderActivatedEvent(order.getRequestId(), order.getOrderId()));
-        if (!matchResult.trades().isEmpty()) {
-            eventPublisher.publish(new OrderExecutedEvent(order.getRequestId(), order.getOrderId(),
-                    matchResult.trades().stream().map(TradeDTO::new).collect(Collectors.toList())));
-        }
-    }
-
     public void handleEnterOrder(EnterOrderRq enterOrderRq) {
         try {
             validateEnterOrderRq(enterOrderRq);
@@ -73,6 +64,24 @@ public class OrderHandler {
                         List.of(Message.ORDER_NOT_SATISFIED_MEQ)));
                 return;
             }
+
+            while (true) {
+                var stopLimitResult = security.getOrderBook().refreshAllQueue(matcher);
+                if (stopLimitResult != null) {
+                    eventPublisher.publish(
+                            new OrderActivatedEvent(((StopLimitOrder) stopLimitResult.remainder()).getRequestId(),
+                                    stopLimitResult.remainder().getOrderId()));
+                    if (!matchResult.trades().isEmpty()) {
+                        System.out.println("published");// TODO publish to test
+                        eventPublisher.publish(
+                                new OrderExecutedEvent(((StopLimitOrder) stopLimitResult.remainder()).getRequestId(),
+                                        stopLimitResult.remainder().getOrderId(),
+                                        matchResult.trades().stream().map(TradeDTO::new).collect(Collectors.toList())));
+                    }
+                } else
+                    break;
+            }
+
             if (enterOrderRq.getRequestType() == OrderEntryType.NEW_ORDER)
                 eventPublisher.publish(new OrderAcceptedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId()));
             else
