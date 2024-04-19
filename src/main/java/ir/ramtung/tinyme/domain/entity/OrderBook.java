@@ -110,16 +110,17 @@ public class OrderBook {
                         .sum();
     }
 
-    public MatchResult refreshAllQueue(Matcher matcher) {
+    public LinkedList<MatchResult> refreshAllQueue(Matcher matcher) {
         var it = deactivatedQueue.listIterator();
+        var res = new LinkedList<MatchResult>();
         while (it.hasNext()) {
             var order = (StopLimitOrder) it.next();
             if (order.checkActivation(matcher.getLastPriceExecuted())) {
                 it.remove();
                 order.activate();
-                return matcher.execute(order, 0);
+                res.add(matcher.execute(order, 0));
             }
         }
-        return null;
+        return res;
     }
 }

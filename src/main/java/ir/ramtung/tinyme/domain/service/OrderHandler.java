@@ -66,18 +66,23 @@ public class OrderHandler {
             }
 
             while (true) {
-                var stopLimitResult = security.getOrderBook().refreshAllQueue(matcher);
-                if (stopLimitResult != null) {
-                    eventPublisher.publish(
-                            new OrderActivatedEvent(((StopLimitOrder) stopLimitResult.remainder()).getRequestId(),
-                                    stopLimitResult.remainder().getOrderId()));
-                    if (!matchResult.trades().isEmpty()) {
-                        System.out.println("published");// TODO publish to test
+                var res = security.getOrderBook().refreshAllQueue(matcher);
+                if (!res.isEmpty()) {
+                    for (var stopLimitResult : res) {
                         eventPublisher.publish(
-                                new OrderExecutedEvent(((StopLimitOrder) stopLimitResult.remainder()).getRequestId(),
-                                        stopLimitResult.remainder().getOrderId(),
-                                        matchResult.trades().stream().map(TradeDTO::new).collect(Collectors.toList())));
+                                new OrderActivatedEvent(((StopLimitOrder) stopLimitResult.remainder()).getRequestId(),
+                                        stopLimitResult.remainder().getOrderId()));
+                        if (!matchResult.trades().isEmpty()) {
+                            System.out.println("published");// TODO publish to test
+                            eventPublisher.publish(
+                                    new OrderExecutedEvent(
+                                            ((StopLimitOrder) stopLimitResult.remainder()).getRequestId(),
+                                            stopLimitResult.remainder().getOrderId(),
+                                            matchResult.trades().stream().map(TradeDTO::new)
+                                                    .collect(Collectors.toList())));
+                        }
                     }
+
                 } else
                     break;
             }
