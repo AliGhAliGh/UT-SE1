@@ -70,15 +70,6 @@ public class EnterOrderRq {
                                 price, brokerId, shareholderId, peakSize, minimumExecutionQuantity, stopLimit);
         }
 
-        public static EnterOrderRq createActivatedOrderRq(long requestId, String securityIsin, long orderId,
-                        LocalDateTime entryTime, Side side, int quantity, int price, long brokerId, long shareholderId,
-                        int peakSize, int minimumExecutionQuantity, int stopLimit) {
-                return new EnterOrderRq(OrderEntryType.ACTIVATED_ORDER, requestId, securityIsin, orderId, entryTime,
-                                side,
-                                quantity,
-                                price, brokerId, shareholderId, peakSize, minimumExecutionQuantity, stopLimit);
-        }
-
         public static EnterOrderRq createUpdateOrderRq(long requestId, String securityIsin, long orderId,
                         LocalDateTime entryTime, Side side, int quantity, int price, long brokerId, long shareholderId,
                         int peakSize) {

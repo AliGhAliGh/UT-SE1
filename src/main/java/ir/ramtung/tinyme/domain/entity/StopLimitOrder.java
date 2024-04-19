@@ -12,30 +12,33 @@ import java.time.LocalDateTime;
 public class StopLimitOrder extends Order {
     private final int stopPrice;
     private boolean active;
+    private long requestId;
 
     public StopLimitOrder(long orderId, Security security, Side side, int quantity, int price, Broker broker,
-            Shareholder shareholder, LocalDateTime entryTime, OrderStatus status, int stopPrice) {
+            Shareholder shareholder, LocalDateTime entryTime, OrderStatus status, int stopPrice, long requestId) {
         super(orderId, security, side, quantity, price, broker, shareholder, entryTime, status);
         this.stopPrice = stopPrice;
         this.active = false;
+        this.requestId = requestId;
     }
 
     public StopLimitOrder(long orderId, Security security, Side side, int quantity, int price, Broker broker,
-            Shareholder shareholder, LocalDateTime entryTime, int stopPrice) {
-        this(orderId, security, side, quantity, price, broker, shareholder, entryTime, OrderStatus.NEW, stopPrice);
+            Shareholder shareholder, LocalDateTime entryTime, int stopPrice, long requestId) {
+        this(orderId, security, side, quantity, price, broker, shareholder, entryTime, OrderStatus.NEW, stopPrice,
+                requestId);
         this.active = false;
     }
 
     @Override
     public Order snapshot() {
         return new StopLimitOrder(orderId, security, side, quantity, price, broker, shareholder, entryTime,
-                OrderStatus.SNAPSHOT, stopPrice);
+                OrderStatus.SNAPSHOT, stopPrice, requestId);
     }
 
     @Override
     public Order snapshotWithQuantity(int newQuantity) {
         return new StopLimitOrder(orderId, security, side, newQuantity, price, broker, shareholder, entryTime,
-                OrderStatus.SNAPSHOT, stopPrice);
+                OrderStatus.SNAPSHOT, stopPrice, requestId);
     }
 
     public boolean checkActivation(int lastTradePrice) {
@@ -50,5 +53,4 @@ public class StopLimitOrder extends Order {
     public void deactivate() {
         active = false;
     }
-
 }

@@ -35,7 +35,7 @@ public class Security {
             order = new StopLimitOrder(
                     enterOrderRq.getOrderId(), this, enterOrderRq.getSide(),
                     enterOrderRq.getQuantity(), enterOrderRq.getPrice(), broker, shareholder,
-                    enterOrderRq.getEntryTime(), enterOrderRq.getStopPrice());
+                    enterOrderRq.getEntryTime(), enterOrderRq.getStopPrice(), enterOrderRq.getRequestId());
         else
             order = new IcebergOrder(enterOrderRq.getOrderId(), this, enterOrderRq.getSide(),
                     enterOrderRq.getQuantity(), enterOrderRq.getPrice(), broker, shareholder,
@@ -49,13 +49,7 @@ public class Security {
         return matcher.execute(order, enterOrderRq.getMinimumExecutionQuantity());
     }
 
-    public MatchResult activateOrder(EnterOrderRq enterOrderRq, Broker broker, Shareholder shareholder,
-            Matcher matcher) {
-
-        Order order = new Order(enterOrderRq.getOrderId(), this, enterOrderRq.getSide(),
-                enterOrderRq.getQuantity(), enterOrderRq.getPrice(), broker, shareholder,
-                enterOrderRq.getEntryTime());
-
+    public MatchResult activateOrder(StopLimitOrder order, Matcher matcher) {
         return matcher.execute(order, 0);
     }
 

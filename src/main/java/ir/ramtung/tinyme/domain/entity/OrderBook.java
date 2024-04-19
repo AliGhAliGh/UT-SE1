@@ -2,19 +2,22 @@ package ir.ramtung.tinyme.domain.entity;
 
 import lombok.Getter;
 
-import static ir.ramtung.tinyme.domain.entity.Side.BUY;
 import static ir.ramtung.tinyme.domain.entity.Side.SELL;
 
 import java.util.LinkedList;
 import java.util.ListIterator;
+
+import ir.ramtung.tinyme.domain.service.OrderHandler;
 
 @Getter
 public class OrderBook {
     private final LinkedList<Order> buyQueue;
     private final LinkedList<Order> sellQueue;
     private final LinkedList<Order> deactivatedQueue;
+    private final OrderHandler orderHandler;
 
-    public OrderBook() {
+    public OrderBook(OrderHandler orderHandler) {
+        this.orderHandler = orderHandler;
         deactivatedQueue = new LinkedList<>();
         buyQueue = new LinkedList<>();
         sellQueue = new LinkedList<>();
@@ -37,8 +40,8 @@ public class OrderBook {
     }
 
     public void enqueueDeactivated(StopLimitOrder order) {
-        addToQueue(deactivatedQueue, order);
         order.deactivate();
+        addToQueue(deactivatedQueue, order);
     }
 
     private LinkedList<Order> getQueue(Side side) {
@@ -47,6 +50,11 @@ public class OrderBook {
 
     public Order findByOrderId(Side side, long orderId) {
         var queue = getQueue(side);
+        for (Order order : queue) {
+            if (order.getOrderId() == orderId)
+                return order;
+        }
+        queue = deactivatedQueue;
         for (Order order : queue) {
             if (order.getOrderId() == orderId)
                 return order;
@@ -109,8 +117,7 @@ public class OrderBook {
         while (it.hasNext()) {
             var order = (StopLimitOrder) it.next();
             if (order.checkActivation(lastPrice)) {
-                order.activate();
-                enqueue(order);
+                orderHandler.activateOrder(order);
                 it.remove();
             }
         }

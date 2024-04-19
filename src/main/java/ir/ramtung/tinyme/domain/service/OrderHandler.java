@@ -35,6 +35,15 @@ public class OrderHandler {
         this.matcher = matcher;
     }
 
+    public void activateOrder(StopLimitOrder order) {
+        var matchResult = order.getSecurity().activateOrder(order, matcher);
+        eventPublisher.publish(new OrderActivatedEvent(order.getRequestId(), order.getOrderId()));
+        if (!matchResult.trades().isEmpty()) {
+            eventPublisher.publish(new OrderExecutedEvent(order.getRequestId(), order.getOrderId(),
+                    matchResult.trades().stream().map(TradeDTO::new).collect(Collectors.toList())));
+        }
+    }
+
     public void handleEnterOrder(EnterOrderRq enterOrderRq) {
         try {
             validateEnterOrderRq(enterOrderRq);
@@ -46,8 +55,6 @@ public class OrderHandler {
             MatchResult matchResult;
             if (enterOrderRq.getRequestType() == OrderEntryType.NEW_ORDER)
                 matchResult = security.newOrder(enterOrderRq, broker, shareholder, matcher);
-            else if (enterOrderRq.getRequestType() == OrderEntryType.ACTIVATED_ORDER)
-                matchResult = security.activateOrder(enterOrderRq, broker, shareholder, matcher);
             else
                 matchResult = security.updateOrder(enterOrderRq, matcher);
 
@@ -68,8 +75,6 @@ public class OrderHandler {
             }
             if (enterOrderRq.getRequestType() == OrderEntryType.NEW_ORDER)
                 eventPublisher.publish(new OrderAcceptedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId()));
-            else if (enterOrderRq.getRequestType() == OrderEntryType.ACTIVATED_ORDER)
-                eventPublisher.publish(new OrderActivatedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId()));
             else
                 eventPublisher.publish(new OrderUpdatedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId()));
             if (!matchResult.trades().isEmpty()) {
