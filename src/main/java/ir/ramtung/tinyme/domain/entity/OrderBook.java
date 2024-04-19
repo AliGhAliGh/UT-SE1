@@ -14,10 +14,8 @@ public class OrderBook {
     private final LinkedList<Order> buyQueue;
     private final LinkedList<Order> sellQueue;
     private final LinkedList<Order> deactivatedQueue;
-    private final OrderHandler orderHandler;
 
-    public OrderBook(OrderHandler orderHandler) {
-        this.orderHandler = orderHandler;
+    public OrderBook() {
         deactivatedQueue = new LinkedList<>();
         buyQueue = new LinkedList<>();
         sellQueue = new LinkedList<>();
@@ -112,13 +110,14 @@ public class OrderBook {
                         .sum();
     }
 
-    public void refreshAllQueue(int lastPrice) {
+    public void refreshAllQueue(int lastPrice, OrderHandler orderHandler) {
         var it = deactivatedQueue.listIterator();
         while (it.hasNext()) {
             var order = (StopLimitOrder) it.next();
             if (order.checkActivation(lastPrice)) {
-                orderHandler.activateOrder(order);
                 it.remove();
+                orderHandler.activateOrder(order);
+                return;
             }
         }
     }
