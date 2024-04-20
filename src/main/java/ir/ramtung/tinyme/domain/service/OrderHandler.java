@@ -68,7 +68,6 @@ public class OrderHandler {
         while (!res.isEmpty()) {
             for (var pair : res) {
                 var order = (StopLimitOrder) pair.getA();
-                System.out.println("start of refresh publish");
                 publishResult(pair.getB(), order.getRequestId(), order.getOrderId(), OrderEntryType.ACTIVATED);
             }
             res = security.getOrderBook().refreshAllQueue(matcher);

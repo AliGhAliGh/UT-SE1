@@ -6,11 +6,13 @@ import lombok.ToString;
 
 import java.time.LocalDateTime;
 
+import ir.ramtung.tinyme.messaging.request.EnterOrderRq;
+
 @Getter
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 public class StopLimitOrder extends Order {
-    private final int stopPrice;
+    private int stopPrice;
     private boolean active;
     private long requestId;
 
@@ -54,5 +56,11 @@ public class StopLimitOrder extends Order {
     public void deactivate() {
         System.out.println("deactivated : " + orderId);
         active = false;
+    }
+
+    @Override
+    public void updateFromRequest(EnterOrderRq updateOrderRq) {
+        super.updateFromRequest(updateOrderRq);
+        stopPrice = updateOrderRq.getStopPrice();
     }
 }
