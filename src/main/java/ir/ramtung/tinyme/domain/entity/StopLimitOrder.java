@@ -47,10 +47,12 @@ public class StopLimitOrder extends Order {
     }
 
     public void activate() {
+        System.out.println("activated : " + orderId);
         active = true;
     }
 
     public void deactivate() {
+        System.out.println("deactivated : " + orderId);
         active = false;
     }
 }

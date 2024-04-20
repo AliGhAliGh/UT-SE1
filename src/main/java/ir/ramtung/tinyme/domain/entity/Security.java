@@ -51,11 +51,13 @@ public class Security {
 
     public void deleteOrder(DeleteOrderRq deleteOrderRq) throws InvalidRequestException {
         Order order = orderBook.findByOrderId(deleteOrderRq.getSide(), deleteOrderRq.getOrderId());
+        System.out.println("deleting order ...");
         if (order == null)
             throw new InvalidRequestException(Message.ORDER_ID_NOT_FOUND);
         if (order.getSide() == Side.BUY)
             order.getBroker().increaseCreditBy(order.getValue());
-        orderBook.removeByOrderId(deleteOrderRq.getSide(), deleteOrderRq.getOrderId());
+        orderBook.removeOrder(order);
+        System.out.println("deleted order : " + order.getOrderId());
     }
 
     public MatchResult updateOrder(EnterOrderRq updateOrderRq, Matcher matcher) throws InvalidRequestException {
@@ -94,7 +96,7 @@ public class Security {
         } else
             order.markAsNew();
 
-        orderBook.removeByOrderId(updateOrderRq.getSide(), updateOrderRq.getOrderId());
+        orderBook.removeActiveOrder(updateOrderRq.getSide(), updateOrderRq.getOrderId());
         MatchResult matchResult = matcher.execute(order, updateOrderRq.getMinimumExecutionQuantity());
         if (matchResult.outcome() != MatchingOutcome.EXECUTED) {
             orderBook.enqueue(originalOrder);

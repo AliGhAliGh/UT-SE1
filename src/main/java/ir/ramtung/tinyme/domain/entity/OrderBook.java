@@ -7,6 +7,8 @@ import static ir.ramtung.tinyme.domain.entity.Side.SELL;
 import java.util.LinkedList;
 import java.util.ListIterator;
 
+import org.apache.activemq.artemis.api.core.Pair;
+
 import ir.ramtung.tinyme.domain.service.Matcher;
 
 @Getter
@@ -60,8 +62,12 @@ public class OrderBook {
         return null;
     }
 
-    public boolean removeByOrderId(Side side, long orderId) {
+    public boolean removeActiveOrder(Side side, long orderId) {
         var queue = getQueue(side);
+        return deleteInQueue(queue, orderId);
+    }
+
+    private boolean deleteInQueue(LinkedList<Order> queue, long orderId) {
         var it = queue.listIterator();
         while (it.hasNext()) {
             if (it.next().getOrderId() == orderId) {
@@ -70,6 +76,11 @@ public class OrderBook {
             }
         }
         return false;
+    }
+
+    public boolean removeOrder(Order order) {
+        var queue = order instanceof StopLimitOrder ? deactivatedQueue : getQueue(order.getSide());
+        return deleteInQueue(queue, order.getOrderId());
     }
 
     public Order matchWithFirst(Order newOrder) {
@@ -87,7 +98,7 @@ public class OrderBook {
     }
 
     public void restoreOrder(Order order) {
-        removeByOrderId(order.getSide(), order.getOrderId());
+        removeActiveOrder(order.getSide(), order.getOrderId());
         putBack(order);
     }
 
@@ -110,15 +121,15 @@ public class OrderBook {
                         .sum();
     }
 
-    public LinkedList<MatchResult> refreshAllQueue(Matcher matcher) {
+    public LinkedList<Pair<Order, MatchResult>> refreshAllQueue(Matcher matcher) {
         var it = deactivatedQueue.listIterator();
-        var res = new LinkedList<MatchResult>();
+        var res = new LinkedList<Pair<Order, MatchResult>>();
         while (it.hasNext()) {
             var order = (StopLimitOrder) it.next();
             if (order.checkActivation(matcher.getLastPriceExecuted())) {
                 it.remove();
                 order.activate();
-                res.add(matcher.execute(order, 0));
+                res.add(new Pair<Order, MatchResult>(order, matcher.execute(order, 0)));
             }
         }
         return res;

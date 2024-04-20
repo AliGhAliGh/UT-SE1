@@ -2,6 +2,7 @@ package ir.ramtung.tinyme.domain.service;
 
 import ir.ramtung.tinyme.domain.entity.*;
 import lombok.Getter;
+import lombok.Setter;
 
 import org.springframework.stereotype.Service;
 
@@ -11,6 +12,7 @@ import java.util.ListIterator;
 @Service
 @Getter
 public class Matcher {
+    @Setter
     private int lastPriceExecuted = 0;
 
     public MatchResult match(Order newOrder) {

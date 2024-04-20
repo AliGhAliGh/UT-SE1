@@ -35,6 +35,46 @@ public class OrderHandler {
         this.matcher = matcher;
     }
 
+    private void publishResult(MatchResult matchResult, long reqId, long orderId, OrderEntryType type) {
+        if (type == OrderEntryType.ACTIVATED)
+            eventPublisher.publish(new OrderActivatedEvent(reqId, orderId));
+        if (matchResult.outcome() == MatchingOutcome.NOT_ENOUGH_CREDIT) {
+            eventPublisher.publish(new OrderRejectedEvent(reqId, orderId,
+                    List.of(Message.BUYER_HAS_NOT_ENOUGH_CREDIT)));
+            return;
+        }
+        if (matchResult.outcome() == MatchingOutcome.NOT_ENOUGH_POSITIONS) {
+            eventPublisher.publish(new OrderRejectedEvent(reqId, orderId,
+                    List.of(Message.SELLER_HAS_NOT_ENOUGH_POSITIONS)));
+            return;
+        }
+        if (matchResult.outcome() == MatchingOutcome.NOT_SATISFY_MEQ) {
+            eventPublisher.publish(new OrderRejectedEvent(reqId, orderId,
+                    List.of(Message.ORDER_NOT_SATISFIED_MEQ)));
+            return;
+        }
+        System.out.println("no error!");
+        if (type == OrderEntryType.NEW_ORDER)
+            eventPublisher.publish(new OrderAcceptedEvent(reqId, orderId));
+        else if (type == OrderEntryType.UPDATE_ORDER)
+            eventPublisher.publish(new OrderUpdatedEvent(reqId, orderId));
+        if (!matchResult.trades().isEmpty())
+            eventPublisher.publish(new OrderExecutedEvent(reqId, orderId,
+                    matchResult.trades().stream().map(TradeDTO::new).collect(Collectors.toList())));
+    }
+
+    private void refreshQueue(Security security) {
+        var res = security.getOrderBook().refreshAllQueue(matcher);
+        while (!res.isEmpty()) {
+            for (var pair : res) {
+                var order = (StopLimitOrder) pair.getA();
+                System.out.println("start of refresh publish");
+                publishResult(pair.getB(), order.getRequestId(), order.getOrderId(), OrderEntryType.ACTIVATED);
+            }
+            res = security.getOrderBook().refreshAllQueue(matcher);
+        }
+    }
+
     public void handleEnterOrder(EnterOrderRq enterOrderRq) {
         try {
             validateEnterOrderRq(enterOrderRq);
@@ -49,52 +89,10 @@ public class OrderHandler {
             else
                 matchResult = security.updateOrder(enterOrderRq, matcher);
 
-            if (matchResult.outcome() == MatchingOutcome.NOT_ENOUGH_CREDIT) {
-                eventPublisher.publish(new OrderRejectedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId(),
-                        List.of(Message.BUYER_HAS_NOT_ENOUGH_CREDIT)));
-                return;
-            }
-            if (matchResult.outcome() == MatchingOutcome.NOT_ENOUGH_POSITIONS) {
-                eventPublisher.publish(new OrderRejectedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId(),
-                        List.of(Message.SELLER_HAS_NOT_ENOUGH_POSITIONS)));
-                return;
-            }
-            if (matchResult.outcome() == MatchingOutcome.NOT_SATISFY_MEQ) {
-                eventPublisher.publish(new OrderRejectedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId(),
-                        List.of(Message.ORDER_NOT_SATISFIED_MEQ)));
-                return;
-            }
+            publishResult(matchResult, enterOrderRq.getRequestId(), enterOrderRq.getOrderId(),
+                    enterOrderRq.getRequestType());
+            refreshQueue(security);
 
-            while (true) {
-                var res = security.getOrderBook().refreshAllQueue(matcher);
-                if (!res.isEmpty()) {
-                    for (var stopLimitResult : res) {
-                        eventPublisher.publish(
-                                new OrderActivatedEvent(((StopLimitOrder) stopLimitResult.remainder()).getRequestId(),
-                                        stopLimitResult.remainder().getOrderId()));
-                        if (!matchResult.trades().isEmpty()) {
-                            System.out.println("published");// TODO publish to test
-                            eventPublisher.publish(
-                                    new OrderExecutedEvent(
-                                            ((StopLimitOrder) stopLimitResult.remainder()).getRequestId(),
-                                            stopLimitResult.remainder().getOrderId(),
-                                            matchResult.trades().stream().map(TradeDTO::new)
-                                                    .collect(Collectors.toList())));
-                        }
-                    }
-
-                } else
-                    break;
-            }
-
-            if (enterOrderRq.getRequestType() == OrderEntryType.NEW_ORDER)
-                eventPublisher.publish(new OrderAcceptedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId()));
-            else
-                eventPublisher.publish(new OrderUpdatedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId()));
-            if (!matchResult.trades().isEmpty()) {
-                eventPublisher.publish(new OrderExecutedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId(),
-                        matchResult.trades().stream().map(TradeDTO::new).collect(Collectors.toList())));
-            }
         } catch (InvalidRequestException ex) {
             eventPublisher.publish(
                     new OrderRejectedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId(), ex.getReasons()));
