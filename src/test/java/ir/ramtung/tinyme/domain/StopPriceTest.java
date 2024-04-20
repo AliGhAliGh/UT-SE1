@@ -167,4 +167,21 @@ public class StopPriceTest {
                 assertThat(orderBook.getBuyQueue().size()).isEqualTo(0);
 
         }
+
+        @Test
+        public void check_credit() {
+                var req = EnterOrderRq.createNewOrderRq(2, security.getIsin(), 11, LocalDateTime.now(), BUY, 2, 15600,
+                        brokerBuy.getBrokerId(), shareholder.getShareholderId(), 0, 0, 16000);
+                orderHandler.handleEnterOrder(req);
+
+                req = EnterOrderRq.createNewOrderRq(3, security.getIsin(), 12, LocalDateTime.now(), BUY, 2, 15850,
+                        brokerBuy.getBrokerId(), shareholder.getShareholderId(), 0);
+                orderHandler.handleEnterOrder(req);
+
+                req = EnterOrderRq.createUpdateOrderRq(4, security.getIsin(), 11, LocalDateTime.now(), BUY, 2, 15600,
+                        brokerBuy.getBrokerId(), shareholder.getShareholderId(), 0, 15800);
+                orderHandler.handleEnterOrder(req);
+
+                assertThat(brokerBuy.getCredit()).isEqualTo(100_000_000 - 15800 * 2 - 15600 * 2);
+        }
 }
