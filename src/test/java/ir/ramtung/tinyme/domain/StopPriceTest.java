@@ -48,6 +48,8 @@ public class StopPriceTest {
         BrokerRepository brokerRepository;
         @Autowired
         ShareholderRepository shareholderRepository;
+        @Autowired
+        private Matcher matcher;
 
         @BeforeEach
         void setupOrderBook() {
@@ -108,5 +110,23 @@ public class StopPriceTest {
                 assertThat(orderBook.getSellQueue().size()).isEqualTo(5);
                 assertThat(orderBook.getDeactivatedQueue().size()).isEqualTo(0);
 
+        }
+
+        @Test
+        public void updating_stop_price_before_activating() {
+                var req = EnterOrderRq.createNewOrderRq(1, security.getIsin(), 12,
+                                LocalDateTime.now(), BUY, 2, 15800,
+                                brokerBuy.getBrokerId(), shareholder.getShareholderId(), 0);
+                orderHandler.handleEnterOrder(req);
+                req = EnterOrderRq.createNewOrderRq(2, security.getIsin(), 11,
+                                LocalDateTime.now(), BUY, 2, 15600,
+                                brokerBuy.getBrokerId(), shareholder.getShareholderId(), 0, 0, 15900);
+                MatchResult res = security.newOrder(req, brokerBuy, shareholder, matcher);
+                assertThat(res.outcome()).isEqualTo(MatchingOutcome.DEACTIVATED);
+                req = EnterOrderRq.createUpdateOrderRq(3, security.getIsin(), 11,
+                                LocalDateTime.now(), BUY, 2, 15600,
+                                brokerBuy.getBrokerId(), shareholder.getShareholderId(), 0, 15700);
+                orderHandler.handleEnterOrder(req);
+                assertThat(brokerBuy.getCredit()).isEqualTo(100_000_000 - 15800 * 2);
         }
 }
