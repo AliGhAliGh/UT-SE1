@@ -154,19 +154,15 @@ public class StopPriceTest {
                                 brokerBuy.getBrokerId(), shareholder.getShareholderId(), 0, 0, 15700);
                 orderHandler.handleEnterOrder(req);
                 assertThat(brokerBuy.getCredit()).isEqualTo(15800 * 2);
-                verify(eventPublisher).publish(new OrderAcceptedEvent(1, 11));
-                assertThat(orderBook.getDeactivatedQueueBuy().size()).isEqualTo(1);
+                verify(eventPublisher)
+                                .publish(new OrderRejectedEvent(1, 11, List.of(Message.BUYER_HAS_NOT_ENOUGH_CREDIT)));
 
                 req = EnterOrderRq.createNewOrderRq(2, security.getIsin(), 12,
                                 LocalDateTime.now(), BUY, 1, 15800,
                                 brokerBuy.getBrokerId(), shareholder.getShareholderId(), 0);
                 orderHandler.handleEnterOrder(req);
-                verify(eventPublisher).publish(new OrderActivatedEvent(1, 11));
-                verify(eventPublisher).publish(new OrderRejectedEvent(1, 11,
-                                List.of(Message.BUYER_HAS_NOT_ENOUGH_CREDIT)));
-                assertThat(orderBook.getDeactivatedQueueSell().size()).isEqualTo(0);
+                assertThat(orderBook.getDeactivatedQueueBuy().size()).isEqualTo(0);
                 assertThat(orderBook.getBuyQueue().size()).isEqualTo(0);
-
         }
 
         @Test
@@ -217,12 +213,14 @@ public class StopPriceTest {
                 orderHandler.handleEnterOrder(req);
                 assertThat(orderBook.getDeactivatedQueueBuy().size()).isEqualTo(1);
                 verify(eventPublisher).publish(new OrderAcceptedEvent(2, 11));
+                assertThat(brokerBuy.getCredit()).isEqualTo(100_000_000 - 2 * 15600);
 
                 req = EnterOrderRq.createUpdateOrderRq(3, security.getIsin(), 11, LocalDateTime.now(), BUY, 1, 20000,
                                 brokerBuy.getBrokerId(), shareholder.getShareholderId(), 0, 15900);
                 orderHandler.handleEnterOrder(req);
                 verify(eventPublisher).publish(new OrderUpdatedEvent(3, 11));
                 assertThat(orderBook.getBuyQueue().size()).isEqualTo(0);
+                assertThat(brokerBuy.getCredit()).isEqualTo(100_000_000 - 20000);
 
                 req = EnterOrderRq.createUpdateOrderRq(4, security.getIsin(), 11, LocalDateTime.now(), BUY, 3, 15850,
                                 brokerBuy.getBrokerId(), shareholder.getShareholderId(), 0, 15550);
@@ -275,7 +273,7 @@ public class StopPriceTest {
                 req = EnterOrderRq.createNewOrderRq(2, security.getIsin(), 12, LocalDateTime.now(), BUY, 2, 15900,
                                 brokerBuy.getBrokerId(), shareholder.getShareholderId(), 0, 0, 15800);
                 orderHandler.handleEnterOrder(req);
-                req = EnterOrderRq.createNewOrderRq(3, security.getIsin(), 13, LocalDateTime.now(), BUY, 5, 15600,
+                req = EnterOrderRq.createNewOrderRq(3, security.getIsin(), 13, LocalDateTime.now(), BUY, 5, 15800,
                                 brokerBuy.getBrokerId(), shareholder.getShareholderId(), 0, 0, 15800);
                 orderHandler.handleEnterOrder(req);
                 req = EnterOrderRq.createNewOrderRq(4, security.getIsin(), 14, LocalDateTime.now(), BUY, 1, 15500,
@@ -289,7 +287,8 @@ public class StopPriceTest {
                 orderHandler.handleEnterOrder(req);
 
                 assertThat(brokerBuy.getCredit())
-                                .isEqualTo(100_000_000 - 15800 * 200 - 15500 - 5 * 15600 - 15810 * 2 - 6 * 15700);
+                                .isEqualTo(100_000_000 - 15800 * 200 - 15500 - 5 * 15800 - 15810 * 2 - 6 * 15700
+                                                - 15600);
                 assertThat(orderBook.getDeactivatedQueueBuy().size()).isEqualTo(1);
                 assertThat(orderBook.getSellQueue().size()).isEqualTo(4);
         }

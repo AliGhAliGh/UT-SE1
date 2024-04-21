@@ -44,7 +44,6 @@ public class OrderBook {
 
     public void enqueueDeactivated(StopLimitOrder order) {
         var queue = getDeactivatedQueue(order.getSide());
-        order.deactivate();
         addToQueue(queue, order);
     }
 

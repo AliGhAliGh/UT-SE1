@@ -4,6 +4,8 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.ToString;
 
+import static ir.ramtung.tinyme.domain.entity.Side.BUY;
+
 import java.time.LocalDateTime;
 
 import ir.ramtung.tinyme.messaging.request.EnterOrderRq;
@@ -62,11 +64,15 @@ public class StopLimitOrder extends Order {
     }
 
     public void activate() {
+        if (side == BUY)
+            broker.increaseCreditBy(getValue());
         System.out.println("activated : " + orderId);
         active = true;
     }
 
     public void deactivate() {
+        if (side == BUY)
+            broker.decreaseCreditBy(getValue());
         System.out.println("deactivated : " + orderId);
         active = false;
     }

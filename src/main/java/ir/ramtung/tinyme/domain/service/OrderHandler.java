@@ -81,11 +81,15 @@ public class OrderHandler {
             Broker broker = brokerRepository.findBrokerById(enterOrderRq.getBrokerId());
             Shareholder shareholder = shareholderRepository.findShareholderById(enterOrderRq.getShareholderId());
 
+            System.out.println("BROKER : " + broker.getCredit());
+
             MatchResult matchResult;
             if (enterOrderRq.getRequestType() == OrderEntryType.NEW_ORDER)
                 matchResult = security.newOrder(enterOrderRq, broker, shareholder, matcher);
             else
                 matchResult = security.updateOrder(enterOrderRq, matcher);
+
+            System.out.println("BROKER : " + broker.getCredit());
 
             publishResult(matchResult, enterOrderRq.getRequestId(), enterOrderRq.getOrderId(),
                     enterOrderRq.getRequestType());

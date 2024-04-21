@@ -8,6 +8,8 @@ import ir.ramtung.tinyme.messaging.Message;
 import lombok.Builder;
 import lombok.Getter;
 
+import static ir.ramtung.tinyme.domain.entity.Side.BUY;
+
 import java.util.List;
 
 @Getter
@@ -42,6 +44,9 @@ public class Security {
                     enterOrderRq.getEntryTime(), enterOrderRq.getPeakSize());
 
         if (order instanceof StopLimitOrder sl && !sl.checkActivation(matcher.getLastPriceExecuted())) {
+            if (order.getSide() == BUY && !order.getBroker().hasEnoughCredit(order.getValue()))
+                return MatchResult.notEnoughCredit();
+            sl.deactivate();
             orderBook.enqueueDeactivated(sl);
             return MatchResult.deactivated();
         }
@@ -66,9 +71,9 @@ public class Security {
                 || ((order instanceof IcebergOrder icebergOrder)
                         && (icebergOrder.getPeakSize() < updateOrderRq.getPeakSize()));
 
-        if (updateOrderRq.getSide() == Side.BUY) {
+        if (updateOrderRq.getSide() == Side.BUY)
             order.getBroker().increaseCreditBy(order.getValue());
-        }
+
         Order originalOrder = order.snapshot();
         order.updateFromRequest(updateOrderRq);
         if (!losesPriority) {
@@ -92,7 +97,14 @@ public class Security {
 
     private MatchResult updateSlOrder(EnterOrderRq updateOrderRq, StopLimitOrder order) {
         boolean losesPriority = updateOrderRq.getStopPrice() != order.getStopPrice();
+        System.out.println("BEFORE : " + order.getValue() + " : " + order.getBroker().getCredit());
+        if (updateOrderRq.getSide() == Side.BUY)
+            order.getBroker().increaseCreditBy(order.getValue());
         order.updateFromRequest(updateOrderRq);
+        if (updateOrderRq.getSide() == Side.BUY)
+            order.getBroker().decreaseCreditBy(order.getValue());
+        System.out.println("AFTER : " + order.getValue() + " : " + order.getBroker().getCredit());
+
         if (losesPriority) {
             orderBook.removeOrder(order);
             orderBook.enqueueDeactivated(order);
