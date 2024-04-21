@@ -121,7 +121,7 @@ public class OrderBook {
                 .filter(order -> order.getShareholder().equals(shareholder))
                 .mapToInt(Order::getTotalQuantity)
                 .sum() +
-                deactivatedQueue.stream()
+                deactivatedQueueSell.stream()
                         .filter(order -> order.getSide() == SELL && order.getShareholder().equals(shareholder))
                         .mapToInt(Order::getTotalQuantity)
                         .sum();
