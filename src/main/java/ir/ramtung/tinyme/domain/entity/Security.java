@@ -118,7 +118,7 @@ public class Security {
                                 + updateOrderRq.getQuantity()))
             return MatchResult.notEnoughPositions();
 
-        if (order instanceof StopLimitOrder sl)
+        if (order instanceof StopLimitOrder sl && !sl.isActive())
             return updateSlOrder(updateOrderRq, sl);
         else
             return updateNormalOrder(updateOrderRq, matcher, order);

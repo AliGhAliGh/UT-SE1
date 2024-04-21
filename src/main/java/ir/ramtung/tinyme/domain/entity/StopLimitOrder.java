@@ -20,7 +20,7 @@ public class StopLimitOrder extends Order {
             Shareholder shareholder, LocalDateTime entryTime, OrderStatus status, int stopPrice, long requestId) {
         super(orderId, security, side, quantity, price, broker, shareholder, entryTime, status);
         this.stopPrice = stopPrice;
-        this.active = false;
+        this.active = true;
         this.requestId = requestId;
     }
 
@@ -28,13 +28,26 @@ public class StopLimitOrder extends Order {
             Shareholder shareholder, LocalDateTime entryTime, int stopPrice, long requestId) {
         this(orderId, security, side, quantity, price, broker, shareholder, entryTime, OrderStatus.NEW, stopPrice,
                 requestId);
-        this.active = false;
+        this.active = true;
     }
 
     @Override
     public Order snapshot() {
         return new StopLimitOrder(orderId, security, side, quantity, price, broker, shareholder, entryTime,
                 OrderStatus.SNAPSHOT, stopPrice, requestId);
+    }
+
+    @Override
+    public boolean queuesBefore(Order order) {
+        if (active)
+            return super.queuesBefore(order);
+        else {
+            var sl = (StopLimitOrder) order;
+            if (sl.getSide() == Side.BUY)
+                return stopPrice < sl.getStopPrice();
+            else
+                return stopPrice > sl.getStopPrice();
+        }
     }
 
     @Override

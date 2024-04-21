@@ -9,6 +9,7 @@ import ir.ramtung.tinyme.messaging.Message;
 import ir.ramtung.tinyme.messaging.event.OrderAcceptedEvent;
 import ir.ramtung.tinyme.messaging.event.OrderActivatedEvent;
 import ir.ramtung.tinyme.messaging.event.OrderRejectedEvent;
+import ir.ramtung.tinyme.messaging.event.OrderUpdatedEvent;
 import ir.ramtung.tinyme.messaging.request.DeleteOrderRq;
 import ir.ramtung.tinyme.messaging.request.EnterOrderRq;
 import ir.ramtung.tinyme.repository.BrokerRepository;
@@ -185,5 +186,48 @@ public class StopPriceTest {
                 assertThat(orderBook.getDeactivatedQueue().size()).isEqualTo(0);
                 assertThat(orderBook.getBuyQueue().size()).isEqualTo(1);
                 assertThat(brokerBuy.getCredit()).isEqualTo(100_000_000 - 15800 * 2 - 15600 * 2);
+        }
+
+        @Test
+        public void updating_quantity_and_price_of_activated_stop_price_order() {
+                var req = EnterOrderRq.createNewOrderRq(2, security.getIsin(), 11, LocalDateTime.now(), BUY, 2, 15600,
+                                brokerBuy.getBrokerId(), shareholder.getShareholderId(), 0, 0, 15700);
+                orderHandler.handleEnterOrder(req);
+                assertThat(orderBook.getBuyQueue().size()).isEqualTo(1);
+                verify(eventPublisher).publish(new OrderAcceptedEvent(2, 11));
+
+                req = EnterOrderRq.createUpdateOrderRq(3, security.getIsin(), 11, LocalDateTime.now(), BUY, 1, 20000,
+                                brokerBuy.getBrokerId(), shareholder.getShareholderId(), 0, 15900);
+                orderHandler.handleEnterOrder(req);
+                verify(eventPublisher).publish(
+                                new OrderRejectedEvent(3, 11, List.of(Message.ACTIVE_ORDER_STOP_LIMIT_UPDATE)));
+
+                req = EnterOrderRq.createUpdateOrderRq(4, security.getIsin(), 11, LocalDateTime.now(), BUY, 3, 15850,
+                                brokerBuy.getBrokerId(), shareholder.getShareholderId(), 0);
+                orderHandler.handleEnterOrder(req);
+                verify(eventPublisher).publish(new OrderUpdatedEvent(4, 11));
+                assertThat(brokerBuy.getCredit()).isEqualTo(100_000_000 - 3 * 15800);
+        }
+
+        @Test
+        public void updating_quantity_and_price_of_deactivated_stop_price_order() {
+                matcher.setLastPriceExecuted(15600);
+                var req = EnterOrderRq.createNewOrderRq(2, security.getIsin(), 11, LocalDateTime.now(), BUY, 2, 15600,
+                                brokerBuy.getBrokerId(), shareholder.getShareholderId(), 0, 0, 15700);
+                orderHandler.handleEnterOrder(req);
+                assertThat(orderBook.getDeactivatedQueue().size()).isEqualTo(1);
+                verify(eventPublisher).publish(new OrderAcceptedEvent(2, 11));
+
+                req = EnterOrderRq.createUpdateOrderRq(3, security.getIsin(), 11, LocalDateTime.now(), BUY, 1, 20000,
+                                brokerBuy.getBrokerId(), shareholder.getShareholderId(), 0, 15900);
+                orderHandler.handleEnterOrder(req);
+                verify(eventPublisher).publish(new OrderUpdatedEvent(3, 11));
+                assertThat(orderBook.getBuyQueue().size()).isEqualTo(0);
+
+                req = EnterOrderRq.createUpdateOrderRq(4, security.getIsin(), 11, LocalDateTime.now(), BUY, 3, 15850,
+                                brokerBuy.getBrokerId(), shareholder.getShareholderId(), 0, 15550);
+                orderHandler.handleEnterOrder(req);
+                verify(eventPublisher).publish(new OrderUpdatedEvent(4, 11));
+                assertThat(brokerBuy.getCredit()).isEqualTo(100_000_000 - 3 * 15800);
         }
 }

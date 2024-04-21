@@ -53,7 +53,6 @@ public class OrderHandler {
                     List.of(Message.ORDER_NOT_SATISFIED_MEQ)));
             return;
         }
-        System.out.println("no error!");
         if (type == OrderEntryType.NEW_ORDER)
             eventPublisher.publish(new OrderAcceptedEvent(reqId, orderId));
         else if (type == OrderEntryType.UPDATE_ORDER)
