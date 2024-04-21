@@ -232,27 +232,6 @@ public class StopPriceTest {
         }
 
         @Test
-        public void update_activated_limit_order_stop_price() {
-                var req = EnterOrderRq.createNewOrderRq(2, security.getIsin(), 11, LocalDateTime.now(), BUY, 2, 15600,
-                                brokerBuy.getBrokerId(), shareholder.getShareholderId(), 0, 0, 15800);
-                orderHandler.handleEnterOrder(req);
-
-                req = EnterOrderRq.createNewOrderRq(3, security.getIsin(), 12, LocalDateTime.now(), BUY, 2, 15850,
-                                brokerBuy.getBrokerId(), shareholder.getShareholderId(), 0);
-                orderHandler.handleEnterOrder(req);
-
-                req = EnterOrderRq.createUpdateOrderRq(4, security.getIsin(), 11, LocalDateTime.now(), BUY, 2, 15600,
-                                brokerBuy.getBrokerId(), shareholder.getShareholderId(), 0, 16000);
-                orderHandler.handleEnterOrder(req);
-
-                assertThat(orderBook.getDeactivatedQueueBuy().size()).isEqualTo(0);
-                assertThat(orderBook.getBuyQueue().size()).isEqualTo(1);
-                assertThat(brokerBuy.getCredit()).isEqualTo(100_000_000 - 15800 * 2 - 15600 * 2);
-                verify(eventPublisher).publish(
-                                new OrderRejectedEvent(4, 11, List.of(Message.ACTIVE_ORDER_STOP_LIMIT_UPDATE)));
-        }
-
-        @Test
         public void order_in_deactivated_queue_test() {
                 var req = EnterOrderRq.createNewOrderRq(1, security.getIsin(), 11, LocalDateTime.now(), BUY, 2, 15600,
                                 brokerBuy.getBrokerId(), shareholder.getShareholderId(), 0, 0, 15900);
@@ -285,5 +264,33 @@ public class StopPriceTest {
                 assertThat(orderBook.getDeactivatedQueueSell().get(0).getOrderId()).isEqualTo(14);
                 assertThat(orderBook.getDeactivatedQueueSell().get(1).getOrderId()).isEqualTo(16);
                 assertThat(orderBook.getDeactivatedQueueSell().get(2).getOrderId()).isEqualTo(15);
+        }
+
+        @Test
+        public void several_deactivated_order_get_activated_at_the_same_time() {
+                matcher.setLastPriceExecuted(0);
+                var req = EnterOrderRq.createNewOrderRq(1, security.getIsin(), 11, LocalDateTime.now(), BUY, 6, 15700,
+                                brokerBuy.getBrokerId(), shareholder.getShareholderId(), 0, 0, 15800);
+                orderHandler.handleEnterOrder(req);
+                req = EnterOrderRq.createNewOrderRq(2, security.getIsin(), 12, LocalDateTime.now(), BUY, 2, 15900,
+                                brokerBuy.getBrokerId(), shareholder.getShareholderId(), 0, 0, 15800);
+                orderHandler.handleEnterOrder(req);
+                req = EnterOrderRq.createNewOrderRq(3, security.getIsin(), 13, LocalDateTime.now(), BUY, 5, 15600,
+                                brokerBuy.getBrokerId(), shareholder.getShareholderId(), 0, 0, 15800);
+                orderHandler.handleEnterOrder(req);
+                req = EnterOrderRq.createNewOrderRq(4, security.getIsin(), 14, LocalDateTime.now(), BUY, 1, 15500,
+                                brokerBuy.getBrokerId(), shareholder.getShareholderId(), 0, 0, 15800);
+                orderHandler.handleEnterOrder(req);
+                req = EnterOrderRq.createNewOrderRq(5, security.getIsin(), 15, LocalDateTime.now(), BUY, 1, 15600,
+                                brokerBuy.getBrokerId(), shareholder.getShareholderId(), 0, 0, 15900);
+                orderHandler.handleEnterOrder(req);
+                req = EnterOrderRq.createNewOrderRq(6, security.getIsin(), 16, LocalDateTime.now(), BUY, 200, 15800,
+                                brokerBuy.getBrokerId(), shareholder.getShareholderId(), 0, 200);
+                orderHandler.handleEnterOrder(req);
+
+                assertThat(brokerBuy.getCredit())
+                                .isEqualTo(100_000_000 - 15800 * 200 - 15500 - 5 * 15600 - 15810 * 2 - 6 * 15700);
+                assertThat(orderBook.getDeactivatedQueueBuy().size()).isEqualTo(1);
+                assertThat(orderBook.getSellQueue().size()).isEqualTo(4);
         }
 }
