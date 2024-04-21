@@ -67,7 +67,6 @@ public class Order {
     }
 
     public boolean matches(Order other) {
-        System.out.println("other : " + other.getOrderId() + " : " + other.getPrice());
         if (side == Side.BUY)
             return price >= other.price;
         else
@@ -85,7 +84,6 @@ public class Order {
     }
 
     public boolean queuesBefore(Order order) {
-        System.out.println("this is good");
         if (order.getSide() == Side.BUY) {
             return price > order.getPrice();
         } else {

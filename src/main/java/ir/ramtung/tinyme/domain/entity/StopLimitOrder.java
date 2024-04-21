@@ -66,14 +66,12 @@ public class StopLimitOrder extends Order {
     public void activate() {
         if (side == BUY)
             broker.increaseCreditBy(getValue());
-        System.out.println("activated : " + orderId);
         active = true;
     }
 
     public void deactivate() {
         if (side == BUY)
             broker.decreaseCreditBy(getValue());
-        System.out.println("deactivated : " + orderId);
         active = false;
     }
 

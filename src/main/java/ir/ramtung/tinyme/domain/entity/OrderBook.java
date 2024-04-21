@@ -26,7 +26,6 @@ public class OrderBook {
     }
 
     public void enqueue(Order order) {
-        System.out.println("add to q : " + order.getOrderId());
         addToQueue(getQueue(order.getSide()), order);
         order.queue();
     }
@@ -92,10 +91,6 @@ public class OrderBook {
 
     public Order matchWithFirst(Order newOrder) {
         var queue = getQueue(newOrder.getSide().opposite());
-        for (var x : queue) {
-            System.out.println(x.orderId);
-        }
-        System.out.println("match with first for : " + newOrder.orderId);
         if (newOrder.matches(queue.getFirst()))
             return queue.getFirst();
         else
@@ -132,8 +127,8 @@ public class OrderBook {
                         .sum();
     }
 
-    public LinkedList<Pair<Order, MatchResult>> refreshAllQueue(Matcher matcher) {
-        var it = deactivatedQueueBuy.listIterator();
+    public LinkedList<Pair<Order, MatchResult>> refreshQueue(LinkedList<Order> queue, Matcher matcher) {
+        var it = queue.listIterator();
         var res = new LinkedList<Pair<Order, MatchResult>>();
         while (it.hasNext()) {
             var order = (StopLimitOrder) it.next();
@@ -144,22 +139,18 @@ public class OrderBook {
             }
         }
 
-        it = deactivatedQueueSell.listIterator();
+        return res;
+    }
 
-        while (it.hasNext()) {
-            var order = (StopLimitOrder) it.next();
-            if (order.checkActivation(matcher.getLastPriceExecuted())) {
-                it.remove();
-                order.activate();
-                res.add(new Pair<Order, MatchResult>(order, matcher.execute(order, 0)));
-            }
-        }
+    public LinkedList<Pair<Order, MatchResult>> refreshAllQueue(Matcher matcher) {
+        var res = new LinkedList<Pair<Order, MatchResult>>();
 
-        System.out.println("sell q :");
-        for (var q : sellQueue) {
-            System.out.println(q.orderId);
-        }
-        System.out.println("end of print");
+        var res1 = refreshQueue(deactivatedQueueBuy, matcher);
+        res.addAll(res1);
+
+        var res2 = refreshQueue(deactivatedQueueSell, matcher);
+        res.addAll(res2);
+
         return res;
     }
 }

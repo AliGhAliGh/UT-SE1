@@ -16,8 +16,6 @@ public class Matcher {
     private int lastPriceExecuted = 0;
 
     public MatchResult match(Order newOrder) {
-        System.out.println("matching");
-
         OrderBook orderBook = newOrder.getSecurity().getOrderBook();
         LinkedList<Trade> trades = new LinkedList<>();
 
@@ -36,7 +34,6 @@ public class Matcher {
                     return MatchResult.notEnoughCredit();
                 }
             }
-            System.out.println("step 1");
 
             trade.increaseSellersCredit();
             trades.add(trade);
@@ -44,7 +41,6 @@ public class Matcher {
             if (newOrder.getQuantity() >= matchingOrder.getQuantity()) {
                 newOrder.decreaseQuantity(matchingOrder.getQuantity());
                 orderBook.removeFirst(matchingOrder.getSide());
-                System.out.println("step 2");
 
                 if (matchingOrder instanceof IcebergOrder icebergOrder) {
                     icebergOrder.decreaseQuantity(matchingOrder.getQuantity());
@@ -100,10 +96,8 @@ public class Matcher {
             }
             order.getSecurity().getOrderBook().enqueue(result.remainder());
         }
-        System.out.println("step 3");
         if (!result.trades().isEmpty()) {
             for (Trade trade : result.trades()) {
-                System.out.println("traded : " + trade.getQuantity());
                 trade.getBuy().getShareholder().incPosition(trade.getSecurity(), trade.getQuantity());
                 trade.getSell().getShareholder().decPosition(trade.getSecurity(), trade.getQuantity());
             }

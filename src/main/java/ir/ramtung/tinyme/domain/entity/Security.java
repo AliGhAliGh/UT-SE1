@@ -56,13 +56,11 @@ public class Security {
 
     public void deleteOrder(DeleteOrderRq deleteOrderRq) throws InvalidRequestException {
         Order order = orderBook.findByOrderId(deleteOrderRq.getSide(), deleteOrderRq.getOrderId());
-        System.out.println("deleting order ...");
         if (order == null)
             throw new InvalidRequestException(Message.ORDER_ID_NOT_FOUND);
         if (order.getSide() == Side.BUY)
             order.getBroker().increaseCreditBy(order.getValue());
         orderBook.removeOrder(order);
-        System.out.println("deleted order : " + order.getOrderId());
     }
 
     private MatchResult updateNormalOrder(EnterOrderRq updateOrderRq, Matcher matcher, Order order) {
@@ -97,13 +95,11 @@ public class Security {
 
     private MatchResult updateSlOrder(EnterOrderRq updateOrderRq, StopLimitOrder order) {
         boolean losesPriority = updateOrderRq.getStopPrice() != order.getStopPrice();
-        System.out.println("BEFORE : " + order.getValue() + " : " + order.getBroker().getCredit());
         if (updateOrderRq.getSide() == Side.BUY)
             order.getBroker().increaseCreditBy(order.getValue());
         order.updateFromRequest(updateOrderRq);
         if (updateOrderRq.getSide() == Side.BUY)
             order.getBroker().decreaseCreditBy(order.getValue());
-        System.out.println("AFTER : " + order.getValue() + " : " + order.getBroker().getCredit());
 
         if (losesPriority) {
             orderBook.removeOrder(order);
