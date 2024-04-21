@@ -579,53 +579,53 @@ public class BrokerCreditTest1 {
         assertThat(buyer.getCredit()).isEqualTo(buyer_expected_value);
     }
 
-    // @Test
-    // void update_buy_iceberg() {
-    // IcebergOrder order1 = new IcebergOrder(11, security, Side.BUY, 250, 15350,
-    // buyer, shareholder, 100);
-    // IcebergOrder order2 = new IcebergOrder(12, security, Side.SELL, 250, 15700,
-    // seller, shareholder, 100);
-    // security.getOrderBook().enqueue(order1);
-    // security.getOrderBook().enqueue(order2);
+     @Test
+     void update_buy_iceberg() {
+     IcebergOrder order1 = new IcebergOrder(11, security, Side.BUY, 250, 15350,
+     buyer, shareholder, 100);
+     IcebergOrder order2 = new IcebergOrder(12, security, Side.SELL, 250, 15700,
+     seller, shareholder, 100);
+     security.getOrderBook().enqueue(order1);
+     security.getOrderBook().enqueue(order2);
 
-    // EnterOrderRq updateOrderRq = EnterOrderRq.createUpdateOrderRq(1,
-    // security.getIsin(), 11,
-    // LocalDateTime.now(), Side.BUY, 250, 15800, buyer.getBrokerId(),
-    // shareholder.getShareholderId(), 100);
+     EnterOrderRq updateOrderRq = EnterOrderRq.createUpdateOrderRq(1,
+     security.getIsin(), 11,
+     LocalDateTime.now(), Side.BUY, 250, 15800, buyer.getBrokerId(),
+     shareholder.getShareholderId(), 100);
 
-    // assertThatNoException().isThrownBy(() -> security.updateOrder(updateOrderRq,
-    // matcher));
+     assertThatNoException().isThrownBy(() -> security.updateOrder(updateOrderRq,
+     matcher));
 
-    // long buyer_expected_value = buyer_credit + 2267500;
-    // long seller_expected_value = seller_credit + 1570000;
+     long buyer_expected_value = 9912500;
+     long seller_expected_value = seller_credit + 3925000;
 
-    // assertThat(buyer.getCredit()).isEqualTo(buyer_expected_value);
-    // assertThat(seller.getCredit()).isEqualTo(seller_expected_value);
-    // }
+     assertThat(buyer.getCredit()).isEqualTo(buyer_expected_value);
+     assertThat(seller.getCredit()).isEqualTo(seller_expected_value);
+     }
 
-    // @Test
-    // void update_sell_iceberg() {
-    // IcebergOrder order1 = new IcebergOrder(11, security, Side.BUY, 250, 15350,
-    // buyer, shareholder, 100);
-    // IcebergOrder order2 = new IcebergOrder(12, security, Side.SELL, 250, 15700,
-    // seller, shareholder, 100);
-    // security.getOrderBook().enqueue(order1);
-    // security.getOrderBook().enqueue(order2);
+     @Test
+     void update_sell_iceberg() {
+     IcebergOrder order1 = new IcebergOrder(11, security, Side.BUY, 250, 15350,
+     buyer, shareholder, 100);
+     IcebergOrder order2 = new IcebergOrder(12, security, Side.SELL, 250, 15700,
+     seller, shareholder, 100);
+     security.getOrderBook().enqueue(order1);
+     security.getOrderBook().enqueue(order2);
 
-    // EnterOrderRq updateOrderRq = EnterOrderRq.createUpdateOrderRq(1,
-    // security.getIsin(), 12,
-    // LocalDateTime.now(), Side.SELL, 250, 15500, seller.getBrokerId(),
-    // shareholder.getShareholderId(), 100);
+     EnterOrderRq updateOrderRq = EnterOrderRq.createUpdateOrderRq(1,
+     security.getIsin(), 12,
+     LocalDateTime.now(), Side.SELL, 250, 15500, seller.getBrokerId(),
+     shareholder.getShareholderId(), 100);
 
-    // assertThatNoException().isThrownBy(() -> security.updateOrder(updateOrderRq,
-    // matcher));
+     assertThatNoException().isThrownBy(() -> security.updateOrder(updateOrderRq,
+     matcher));
 
-    // long buyer_expected_value = buyer_credit;
-    // long seller_expected_value = seller_credit + 5439300;
+     long buyer_expected_value = buyer_credit;
+     long seller_expected_value = seller_credit + 3925000;
 
-    // assertThat(buyer.getCredit()).isEqualTo(buyer_expected_value);
-    // assertThat(seller.getCredit()).isEqualTo(seller_expected_value);
-    // }
+     assertThat(buyer.getCredit()).isEqualTo(buyer_expected_value);
+     assertThat(seller.getCredit()).isEqualTo(seller_expected_value);
+     }
 
     @Test
     void delete_buy_iceberg() {
@@ -661,26 +661,26 @@ public class BrokerCreditTest1 {
         assertThat(seller.getCredit()).isEqualTo(seller_expected_value);
     }
 
-    // @Test
-    // void update_buy_iceberg_quantity() {
-    // IcebergOrder order1 = new IcebergOrder(11, security, Side.BUY, 1000, 12000,
-    // buyer, shareholder, 50);
-    // IcebergOrder order2 = new IcebergOrder(12, security, Side.SELL, 1000, 15700,
-    // seller, shareholder, 50);
-    // security.getOrderBook().enqueue(order1);
-    // security.getOrderBook().enqueue(order2);
+     @Test
+     void update_buy_iceberg_quantity() {
+     IcebergOrder order1 = new IcebergOrder(11, security, Side.BUY, 1000, 12000,
+     buyer, shareholder, 50);
+     IcebergOrder order2 = new IcebergOrder(12, security, Side.SELL, 1000, 15700,
+     seller, shareholder, 50);
+     security.getOrderBook().enqueue(order1);
+     security.getOrderBook().enqueue(order2);
 
-    // EnterOrderRq updateOrderRq = EnterOrderRq.createUpdateOrderRq(1,
-    // security.getIsin(), 11,
-    // LocalDateTime.now(), Side.BUY, 1500, 14000, buyer.getBrokerId(),
-    // shareholder.getShareholderId(), 100);
-    // assertThatNoException().isThrownBy(() -> security.updateOrder(updateOrderRq,
-    // matcher));
+     EnterOrderRq updateOrderRq = EnterOrderRq.createUpdateOrderRq(1,
+     security.getIsin(), 11,
+     LocalDateTime.now(), Side.BUY, 1500, 14000, buyer.getBrokerId(),
+     shareholder.getShareholderId(), 100);
+     assertThatNoException().isThrownBy(() -> security.updateOrder(updateOrderRq,
+     matcher));
 
-    // long buyer_expected_value = buyer_credit + 10600000;
-    // long seller_expected_value = seller_credit;
+     long buyer_expected_value = 1000000;
+     long seller_expected_value = seller_credit;
 
-    // assertThat(buyer.getCredit()).isEqualTo(buyer_expected_value);
-    // assertThat(seller.getCredit()).isEqualTo(seller_expected_value);
-    // }
+     assertThat(buyer.getCredit()).isEqualTo(buyer_expected_value);
+     assertThat(seller.getCredit()).isEqualTo(seller_expected_value);
+     }
 }
