@@ -15,10 +15,12 @@ import ir.ramtung.tinyme.domain.service.Matcher;
 public class OrderBook {
     private final LinkedList<Order> buyQueue;
     private final LinkedList<Order> sellQueue;
-    private final LinkedList<Order> deactivatedQueue;
+    private final LinkedList<Order> deactivatedQueueBuy;
+    private final LinkedList<Order> deactivatedQueueSell;
 
     public OrderBook() {
-        deactivatedQueue = new LinkedList<>();
+        deactivatedQueueBuy = new LinkedList<>();
+        deactivatedQueueSell = new LinkedList<>();
         buyQueue = new LinkedList<>();
         sellQueue = new LinkedList<>();
     }
@@ -40,12 +42,16 @@ public class OrderBook {
     }
 
     public void enqueueDeactivated(StopLimitOrder order) {
+        var queue = getDeactivatedQueue(order.getSide());
         order.deactivate();
-        addToQueue(deactivatedQueue, order);
+        addToQueue(queue, order);
     }
 
     private LinkedList<Order> getQueue(Side side) {
         return side == Side.BUY ? buyQueue : sellQueue;
+    }
+    private LinkedList<Order> getDeactivatedQueue(Side side) {
+        return side == Side.BUY ? deactivatedQueueBuy : deactivatedQueueSell;
     }
 
     public Order findByOrderId(Side side, long orderId) {
@@ -54,7 +60,7 @@ public class OrderBook {
             if (order.getOrderId() == orderId)
                 return order;
         }
-        queue = deactivatedQueue;
+        queue = getDeactivatedQueue(side);
         for (Order order : queue) {
             if (order.getOrderId() == orderId)
                 return order;
@@ -79,7 +85,7 @@ public class OrderBook {
     }
 
     public boolean removeOrder(Order order) {
-        var queue = order instanceof StopLimitOrder ? deactivatedQueue : getQueue(order.getSide());
+        var queue = order instanceof StopLimitOrder ? getDeactivatedQueue(order.getSide()) : getQueue(order.getSide());
         return deleteInQueue(queue, order.getOrderId());
     }
 
@@ -122,7 +128,7 @@ public class OrderBook {
     }
 
     public LinkedList<Pair<Order, MatchResult>> refreshAllQueue(Matcher matcher) {
-        var it = deactivatedQueue.listIterator();
+        var it = deactivatedQueueBuy.listIterator();
         var res = new LinkedList<Pair<Order, MatchResult>>();
         while (it.hasNext()) {
             var order = (StopLimitOrder) it.next();
@@ -132,6 +138,18 @@ public class OrderBook {
                 res.add(new Pair<Order, MatchResult>(order, matcher.execute(order, 0)));
             }
         }
+
+        it = deactivatedQueueSell.listIterator();
+
+        while (it.hasNext()) {
+            var order = (StopLimitOrder) it.next();
+            if (order.checkActivation(matcher.getLastPriceExecuted())) {
+                it.remove();
+                order.activate();
+                res.add(new Pair<Order, MatchResult>(order, matcher.execute(order, 0)));
+            }
+        }
+
         return res;
     }
 }
