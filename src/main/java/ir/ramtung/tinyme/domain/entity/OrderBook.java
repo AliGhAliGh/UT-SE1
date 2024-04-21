@@ -26,6 +26,7 @@ public class OrderBook {
     }
 
     public void enqueue(Order order) {
+        System.out.println("add to q : " + order.getOrderId());
         addToQueue(getQueue(order.getSide()), order);
         order.queue();
     }
@@ -50,6 +51,7 @@ public class OrderBook {
     private LinkedList<Order> getQueue(Side side) {
         return side == Side.BUY ? buyQueue : sellQueue;
     }
+
     private LinkedList<Order> getDeactivatedQueue(Side side) {
         return side == Side.BUY ? deactivatedQueueBuy : deactivatedQueueSell;
     }
@@ -91,6 +93,10 @@ public class OrderBook {
 
     public Order matchWithFirst(Order newOrder) {
         var queue = getQueue(newOrder.getSide().opposite());
+        for (var x : queue) {
+            System.out.println(x.orderId);
+        }
+        System.out.println("match with first for : " + newOrder.orderId);
         if (newOrder.matches(queue.getFirst()))
             return queue.getFirst();
         else
@@ -150,6 +156,11 @@ public class OrderBook {
             }
         }
 
+        System.out.println("sell q :");
+        for (var q : sellQueue) {
+            System.out.println(q.orderId);
+        }
+        System.out.println("end of print");
         return res;
     }
 }

@@ -293,4 +293,36 @@ public class StopPriceTest {
                 assertThat(orderBook.getDeactivatedQueueBuy().size()).isEqualTo(1);
                 assertThat(orderBook.getSellQueue().size()).isEqualTo(4);
         }
+
+        @Test
+        public void several_deactivated_order_trades_with_each_other() {
+                matcher.setLastPriceExecuted(0);
+                var req = EnterOrderRq.createNewOrderRq(1, security.getIsin(), 12, LocalDateTime.now(), BUY, 7, 15600,
+                                brokerBuy.getBrokerId(), shareholder.getShareholderId(), 0, 0, 15800);
+                orderHandler.handleEnterOrder(req);
+                req = EnterOrderRq.createNewOrderRq(2, security.getIsin(), 11, LocalDateTime.now(), BUY, 2, 15700,
+                                brokerBuy.getBrokerId(), shareholder.getShareholderId(), 0, 0, 15800);
+                orderHandler.handleEnterOrder(req);
+                assertThat(orderBook.getDeactivatedQueueBuy().size()).isEqualTo(2);
+
+                req = EnterOrderRq.createNewOrderRq(3, security.getIsin(), 13, LocalDateTime.now(), SELL, 2, 15600,
+                                brokerSell.getBrokerId(), shareholder.getShareholderId(), 0, 0, 15800);
+                orderHandler.handleEnterOrder(req);
+                req = EnterOrderRq.createNewOrderRq(4, security.getIsin(), 14, LocalDateTime.now(), SELL, 2, 15500,
+                                brokerSell.getBrokerId(), shareholder.getShareholderId(), 0, 0, 15800);
+                orderHandler.handleEnterOrder(req);
+                assertThat(orderBook.getSellQueue().size()).isEqualTo(7);
+
+                req = EnterOrderRq.createNewOrderRq(6, security.getIsin(), 16, LocalDateTime.now(), BUY, 200, 15800,
+                                brokerBuy.getBrokerId(), shareholder.getShareholderId(), 0, 200);
+                orderHandler.handleEnterOrder(req);
+
+                assertThat(orderBook.getDeactivatedQueueBuy().size()).isEqualTo(0);
+                assertThat(orderBook.getSellQueue().size()).isEqualTo(5);
+
+                assertThat(orderBook.getBuyQueue().getFirst().getOrderId()).isEqualTo(11);
+                assertThat(orderBook.getBuyQueue().getFirst().getQuantity()).isEqualTo(2);
+                assertThat(brokerBuy.getCredit())
+                                .isEqualTo(100_000_000 - 2 * 15500 - 2 * 15600 - 196 * 15800 - 2 * 15700 - 7 * 15600);
+        }
 }
