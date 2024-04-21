@@ -95,8 +95,13 @@ public class Security {
 
     private MatchResult updateSlOrder(EnterOrderRq updateOrderRq, StopLimitOrder order) {
         boolean losesPriority = updateOrderRq.getStopPrice() != order.getStopPrice();
-        if (updateOrderRq.getSide() == Side.BUY)
+        if (updateOrderRq.getSide() == Side.BUY) {
             order.getBroker().increaseCreditBy(order.getValue());
+            if (!order.getBroker().hasEnoughCredit(updateOrderRq.getQuantity() * updateOrderRq.getPrice())) {
+                order.getBroker().decreaseCreditBy(order.getValue());
+                return MatchResult.notEnoughCredit();
+            }
+        }
         order.updateFromRequest(updateOrderRq);
         if (updateOrderRq.getSide() == Side.BUY)
             order.getBroker().decreaseCreditBy(order.getValue());

@@ -166,6 +166,30 @@ public class StopPriceTest {
         }
 
         @Test
+        public void update_reject_not_have_credit() {
+                matcher.setLastPriceExecuted(15600);
+                brokerBuy.decreaseCreditBy(99_968_400L); // credit = 2 * 15800
+
+                var req = EnterOrderRq.createNewOrderRq(1, security.getIsin(), 11,
+                                LocalDateTime.now(), BUY, 2, 15600,
+                                brokerBuy.getBrokerId(), shareholder.getShareholderId(), 0, 0, 15700);
+                orderHandler.handleEnterOrder(req);
+
+                req = EnterOrderRq.createUpdateOrderRq(2, security.getIsin(), 11,
+                                LocalDateTime.now(), BUY, 2, 15800,
+                                brokerBuy.getBrokerId(), shareholder.getShareholderId(), 0);
+                orderHandler.handleEnterOrder(req);
+                verify(eventPublisher).publish(new OrderUpdatedEvent(2, 11));
+
+                req = EnterOrderRq.createUpdateOrderRq(3, security.getIsin(), 11,
+                                LocalDateTime.now(), BUY, 3, 15800,
+                                brokerBuy.getBrokerId(), shareholder.getShareholderId(), 0);
+                orderHandler.handleEnterOrder(req);
+                verify(eventPublisher)
+                                .publish(new OrderRejectedEvent(3, 11, List.of(Message.BUYER_HAS_NOT_ENOUGH_CREDIT)));
+        }
+
+        @Test
         public void update_deactivated_limit_order_stop_price() {
                 var req = EnterOrderRq.createNewOrderRq(2, security.getIsin(), 11, LocalDateTime.now(), BUY, 2, 15600,
                                 brokerBuy.getBrokerId(), shareholder.getShareholderId(), 0, 0, 16000);
