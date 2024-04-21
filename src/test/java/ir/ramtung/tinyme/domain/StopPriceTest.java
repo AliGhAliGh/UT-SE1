@@ -169,7 +169,7 @@ public class StopPriceTest {
         }
 
         @Test
-        public void check_credit() {
+        public void update_deactivated_limit_order_stop_price() {
                 var req = EnterOrderRq.createNewOrderRq(2, security.getIsin(), 11, LocalDateTime.now(), BUY, 2, 15600,
                                 brokerBuy.getBrokerId(), shareholder.getShareholderId(), 0, 0, 16000);
                 orderHandler.handleEnterOrder(req);
