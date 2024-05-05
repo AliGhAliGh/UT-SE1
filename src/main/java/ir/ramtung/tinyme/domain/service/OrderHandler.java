@@ -110,9 +110,10 @@ public class OrderHandler {
 
     public void handleChangeState(ChangeMatchingStateRq changeMatchingStateRq) {
         Security security = securityRepository.findSecurityByIsin(changeMatchingStateRq.getSecurityIsin());
-        security.changeState(changeMatchingStateRq.getTargetState());
-
-        eventPublisher.publish(new SecurityStateChangedEvent(LocalDateTime.now(), security.getIsin(), changeMatchingStateRq.getTargetState()));
+        if (security.getState() == MatchingState.CONTINUOUS && changeMatchingStateRq.getTargetState() == MatchingState.CONTINUOUS) {
+            security.changeState(changeMatchingStateRq.getTargetState());
+            eventPublisher.publish(new SecurityStateChangedEvent(LocalDateTime.now(), security.getIsin(), changeMatchingStateRq.getTargetState()));
+        }
     }
 
     private void validateEnterOrderRq(EnterOrderRq enterOrderRq) throws InvalidRequestException {
