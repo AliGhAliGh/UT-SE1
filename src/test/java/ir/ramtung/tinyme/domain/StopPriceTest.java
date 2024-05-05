@@ -348,4 +348,27 @@ public class StopPriceTest {
                 assertThat(brokerBuy.getCredit())
                                 .isEqualTo(100_000_000 - 2 * 15500 - 2 * 15600 - 196 * 15800 - 2 * 15700 - 7 * 15600);
         }
+
+        @Test
+        public void order_in_deactivated_queue_after_updating_test() {
+                var req = EnterOrderRq.createNewOrderRq(1, security.getIsin(), 11, LocalDateTime.now(), BUY, 2, 15600,
+                                brokerBuy.getBrokerId(), shareholder.getShareholderId(), 0, 0, 15900);
+                orderHandler.handleEnterOrder(req);
+
+                req = EnterOrderRq.createNewOrderRq(2, security.getIsin(), 12, LocalDateTime.now(), BUY, 2, 15850,
+                                brokerBuy.getBrokerId(), shareholder.getShareholderId(), 0, 0, 15850);
+                orderHandler.handleEnterOrder(req);
+
+                req = EnterOrderRq.createNewOrderRq(3, security.getIsin(), 13, LocalDateTime.now(), BUY, 2, 15850,
+                                brokerBuy.getBrokerId(), shareholder.getShareholderId(), 0, 0, 15950);
+                orderHandler.handleEnterOrder(req);
+
+                req = EnterOrderRq.createUpdateOrderRq(7, security.getIsin(), 12, LocalDateTime.now(), BUY, 20, 15900,
+                                brokerBuy.getBrokerId(), shareholder.getShareholderId(), 0, 16000);
+                orderHandler.handleEnterOrder(req);
+
+                assertThat(orderBook.getDeactivatedQueueBuy().get(0).getOrderId()).isEqualTo(11);
+                assertThat(orderBook.getDeactivatedQueueBuy().get(1).getOrderId()).isEqualTo(13);
+                assertThat(orderBook.getDeactivatedQueueBuy().get(2).getOrderId()).isEqualTo(12);
+        }
 }
