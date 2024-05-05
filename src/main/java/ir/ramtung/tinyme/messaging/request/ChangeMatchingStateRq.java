@@ -7,6 +7,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class ChangeMatchingStateRq {
     private String securityIsin;
-    private MatchinState targetState;
+    private MatchingState targetState;
 
 }

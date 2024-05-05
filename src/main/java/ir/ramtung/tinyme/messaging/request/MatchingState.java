@@ -1,6 +1,6 @@
 package ir.ramtung.tinyme.messaging.request;
 
-public enum MatchinState {
+public enum MatchingState {
     CONTINUOUS,
     AUCTION
 }

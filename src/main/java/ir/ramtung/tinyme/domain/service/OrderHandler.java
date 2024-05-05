@@ -6,14 +6,13 @@ import ir.ramtung.tinyme.messaging.exception.InvalidRequestException;
 import ir.ramtung.tinyme.messaging.EventPublisher;
 import ir.ramtung.tinyme.messaging.TradeDTO;
 import ir.ramtung.tinyme.messaging.event.*;
-import ir.ramtung.tinyme.messaging.request.DeleteOrderRq;
-import ir.ramtung.tinyme.messaging.request.EnterOrderRq;
-import ir.ramtung.tinyme.messaging.request.OrderEntryType;
+import ir.ramtung.tinyme.messaging.request.*;
 import ir.ramtung.tinyme.repository.BrokerRepository;
 import ir.ramtung.tinyme.repository.SecurityRepository;
 import ir.ramtung.tinyme.repository.ShareholderRepository;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -109,6 +108,13 @@ public class OrderHandler {
         }
     }
 
+    public void handleChangeState(ChangeMatchingStateRq changeMatchingStateRq) {
+        Security security = securityRepository.findSecurityByIsin(changeMatchingStateRq.getSecurityIsin());
+        security.changeState(changeMatchingStateRq.getTargetState());
+
+        eventPublisher.publish(new SecurityStateChangedEvent(LocalDateTime.now(), security.getIsin(), changeMatchingStateRq.getTargetState()));
+    }
+
     private void validateEnterOrderRq(EnterOrderRq enterOrderRq) throws InvalidRequestException {
         List<String> errors = new LinkedList<>();
         if (enterOrderRq.getOrderId() <= 0)
@@ -142,6 +148,10 @@ public class OrderHandler {
             errors.add(Message.UNKNOWN_SHAREHOLDER_ID);
         if (enterOrderRq.getPeakSize() < 0 || enterOrderRq.getPeakSize() >= enterOrderRq.getQuantity())
             errors.add(Message.INVALID_PEAK_SIZE);
+        if (enterOrderRq.getMinimumExecutionQuantity() > 0 && security.getState() == MatchingState.AUCTION)
+            errors.add(Message.MEQ_IN_AUCTION_STATE);
+        if (enterOrderRq.getStopPrice() > 0 && security.getState() == MatchingState.AUCTION)
+            errors.add(Message.STOP_LIMIT_ORDER_IN_AUCTION_STATE);
         if (!errors.isEmpty())
             throw new InvalidRequestException(errors);
     }
@@ -155,4 +165,6 @@ public class OrderHandler {
         if (!errors.isEmpty())
             throw new InvalidRequestException(errors);
     }
+
+
 }

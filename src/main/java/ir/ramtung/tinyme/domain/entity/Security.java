@@ -5,6 +5,7 @@ import ir.ramtung.tinyme.messaging.request.DeleteOrderRq;
 import ir.ramtung.tinyme.messaging.request.EnterOrderRq;
 import ir.ramtung.tinyme.domain.service.Matcher;
 import ir.ramtung.tinyme.messaging.Message;
+import ir.ramtung.tinyme.messaging.request.MatchingState;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -22,6 +23,7 @@ public class Security {
     private int lotSize = 1;
     @Builder.Default
     private OrderBook orderBook = new OrderBook();
+    private MatchingState state = MatchingState.CONTINUOUS;
 
     public MatchResult newOrder(EnterOrderRq enterOrderRq, Broker broker, Shareholder shareholder, Matcher matcher) {
         if (enterOrderRq.getSide() == Side.SELL && !shareholder.hasEnoughPositionsOn(this,
@@ -135,5 +137,9 @@ public class Security {
             return updateSlOrder(updateOrderRq, sl);
         else
             return updateNormalOrder(updateOrderRq, matcher, order);
+    }
+
+    public void changeState(MatchingState state) {
+        this.state = state;
     }
 }
