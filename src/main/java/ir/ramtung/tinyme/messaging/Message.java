@@ -20,4 +20,6 @@ public class Message {
     public static final String ACTIVE_ORDER_STOP_LIMIT_UPDATE = "Active Orders can't update their stop limit!";
     public static final String MEQ_WITH_STOP_LIMIT_ORDER = "Stop limit orders can't have Minimum execution quantity!";
     public static final String ICEBERG_WITH_STOP_LIMIT_ORDER = "Stop limit orders can't be an iceberg order!";
+    public static final String MEQ_IN_AUCTION_STATE = "MEQ is not allowed in auction state!";
+    public static final String STOP_LIMIT_ORDER_IN_AUCTION_STATE = "Stop limit order is not allowed in auction state!";
 }
