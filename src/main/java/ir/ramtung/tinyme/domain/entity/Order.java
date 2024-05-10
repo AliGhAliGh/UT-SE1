@@ -73,6 +73,13 @@ public class Order {
             return price <= other.price;
     }
 
+    public boolean matchesAuction(int openingPrice) {
+        if (side == Side.BUY)
+            return price >= openingPrice;
+        else
+            return price <= openingPrice;
+    }
+
     public void decreaseQuantity(int amount) {
         if (amount > quantity)
             throw new IllegalArgumentException();

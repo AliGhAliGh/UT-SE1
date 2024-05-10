@@ -105,4 +105,93 @@ public class Matcher {
         }
         return result;
     }
+
+    public boolean buyOrderEnterAuction(Broker buyer, Order newOrder) {
+        if (buyer.hasEnoughCredit(newOrder.getValue())) {
+            buyer.decreaseCreditBy(newOrder.getValue());
+            return true;
+        }
+        return false;
+    }
+
+    public MatchResult auctionMatch(int openingPrice, Security security) {
+        OrderBook orderBook = security.getOrderBook();
+        LinkedList<Trade> trades = new LinkedList<>();
+
+        int buyOrderQuantityTrade;
+
+        Order buyOrder = orderBook.findMatchAuction(Side.BUY, openingPrice);
+        Order sellOrder = orderBook.findMatchAuction(Side.SELL, openingPrice);
+
+        while (buyOrder != null && sellOrder != null) {
+            Trade trade = new Trade(security, openingPrice,
+                    Math.min(buyOrder.getQuantity(), sellOrder.getQuantity()), buyOrder, sellOrder);
+
+            trade.increaseSellersCredit();
+            trades.add(trade);
+
+            if (buyOrder.getQuantity() > sellOrder.getQuantity()) {
+                buyOrder.decreaseQuantity(sellOrder.getQuantity());
+                orderBook.removeFirst(sellOrder.getSide());
+                buyOrderQuantityTrade = sellOrder.getQuantity();
+
+                if (sellOrder instanceof IcebergOrder icebergOrder) {
+                    icebergOrder.decreaseQuantity(sellOrder.getQuantity());
+                    icebergOrder.replenish();
+                    if (icebergOrder.getQuantity() > 0)
+                        orderBook.enqueue(icebergOrder);
+                }
+            } else if (buyOrder.getQuantity() < sellOrder.getQuantity()){
+                sellOrder.decreaseQuantity(buyOrder.getQuantity());
+                orderBook.removeFirst(buyOrder.getSide());
+                buyOrderQuantityTrade = buyOrder.getQuantity();
+
+                if (buyOrder instanceof IcebergOrder icebergOrder) {
+                    icebergOrder.decreaseQuantity(buyOrder.getQuantity());
+                    icebergOrder.replenish();
+                    if (icebergOrder.getQuantity() > 0)
+                        orderBook.enqueue(icebergOrder);
+                }
+            }
+            else {
+                orderBook.removeFirst(buyOrder.getSide());
+                orderBook.removeFirst(sellOrder.getSide());
+                buyOrderQuantityTrade = buyOrder.getQuantity();
+
+                if (buyOrder instanceof IcebergOrder icebergOrder) {
+                    icebergOrder.decreaseQuantity(buyOrder.getQuantity());
+                    icebergOrder.replenish();
+                    if (icebergOrder.getQuantity() > 0)
+                        orderBook.enqueue(icebergOrder);
+                }
+
+                if (sellOrder instanceof IcebergOrder icebergOrder) {
+                    icebergOrder.decreaseQuantity(sellOrder.getQuantity());
+                    icebergOrder.replenish();
+                    if (icebergOrder.getQuantity() > 0)
+                        orderBook.enqueue(icebergOrder);
+                }
+            }
+
+            buyOrder.getBroker().increaseCreditBy((long)buyOrder.getQuantity() * buyOrder.getPrice() - (long)buyOrderQuantityTrade * openingPrice);
+            buyOrder = orderBook.findMatchAuction(Side.BUY, openingPrice);
+            sellOrder = orderBook.findMatchAuction(Side.SELL, openingPrice);
+        }
+
+        return MatchResult.executed(null, trades);
+    }
+
+    public MatchResult executeAuction(Security security, int openingPrice) {
+        MatchResult result = auctionMatch(openingPrice, security);
+
+        if (!result.trades().isEmpty()) {
+            for (Trade trade : result.trades()) {
+                trade.getBuy().getShareholder().incPosition(trade.getSecurity(), trade.getQuantity());
+                trade.getSell().getShareholder().decPosition(trade.getSecurity(), trade.getQuantity());
+            }
+            lastPriceExecuted = result.trades().getLast().getPrice();
+        }
+
+        return result;
+    }
 }

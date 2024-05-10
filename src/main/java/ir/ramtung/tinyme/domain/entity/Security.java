@@ -24,6 +24,7 @@ public class Security {
     @Builder.Default
     private OrderBook orderBook = new OrderBook();
     private MatchingState state = MatchingState.CONTINUOUS;
+    private int openingPrice;
 
     public MatchResult newOrder(EnterOrderRq enterOrderRq, Broker broker, Shareholder shareholder, Matcher matcher) {
         if (enterOrderRq.getSide() == Side.SELL && !shareholder.hasEnoughPositionsOn(this,
@@ -51,6 +52,18 @@ public class Security {
             sl.deactivate();
             orderBook.enqueueDeactivated(sl);
             return MatchResult.deactivated();
+        }
+
+        if (state == MatchingState.AUCTION) {
+            if (order.getSide() == BUY) {
+                if (!matcher.buyOrderEnterAuction(order.getBroker(), order)) {
+                    return MatchResult.notEnoughCredit();
+                }
+                order.getBroker().decreaseCreditBy(order.getValue());
+            }
+
+            orderBook.enqueue(order);
+            return matcher.executeAuction(this, openingPrice);
         }
 
         return matcher.execute(order, enterOrderRq.getMinimumExecutionQuantity());
