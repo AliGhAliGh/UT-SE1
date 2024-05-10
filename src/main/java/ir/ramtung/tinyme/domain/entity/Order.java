@@ -73,7 +73,7 @@ public class Order {
             return price <= other.price;
     }
 
-    public boolean matchesAuction(int openingPrice) {
+    public boolean matches(int openingPrice) {
         if (side == Side.BUY)
             return price >= openingPrice;
         else

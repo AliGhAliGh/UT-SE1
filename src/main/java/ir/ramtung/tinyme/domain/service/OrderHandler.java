@@ -34,31 +34,43 @@ public class OrderHandler {
         this.matcher = matcher;
     }
 
-    private void publishResult(MatchResult matchResult, long reqId, long orderId, OrderEntryType type) {
+    private void publishResult(MatchResult matchResult, long reqId, long orderId, OrderEntryType type,
+            Security security) {
         if (type == OrderEntryType.ACTIVATED)
             eventPublisher.publish(new OrderActivatedEvent(reqId, orderId));
-        if (matchResult.outcome() == MatchingOutcome.NOT_ENOUGH_CREDIT) {
-            eventPublisher.publish(new OrderRejectedEvent(reqId, orderId,
-                    List.of(Message.BUYER_HAS_NOT_ENOUGH_CREDIT)));
-            return;
+
+        switch (matchResult.outcome()) {
+            case NOT_ENOUGH_CREDIT:
+                eventPublisher.publish(new OrderRejectedEvent(reqId, orderId,
+                        List.of(Message.BUYER_HAS_NOT_ENOUGH_CREDIT)));
+                break;
+            case NOT_ENOUGH_POSITIONS:
+                eventPublisher.publish(new OrderRejectedEvent(reqId, orderId,
+                        List.of(Message.SELLER_HAS_NOT_ENOUGH_POSITIONS)));
+                break;
+            case NOT_SATISFY_MEQ:
+                eventPublisher.publish(new OrderRejectedEvent(reqId, orderId,
+                        List.of(Message.ORDER_NOT_SATISFIED_MEQ)));
+                break;
+            case ORDER_ENTERED:
+                var openingPrice = security.getOpeningPrice();
+                var tradedQuantity = security.tradedQuantityAtPrice(openingPrice);
+                eventPublisher.publish(
+                        new OpeningPriceEvent(LocalDateTime.now(), security.getIsin(), openingPrice, tradedQuantity));
+                break;
+            case AUCTION:
+                // TODO publish trade events
+                break;
+            default:
+                if (type == OrderEntryType.NEW_ORDER)
+                    eventPublisher.publish(new OrderAcceptedEvent(reqId, orderId));
+                else if (type == OrderEntryType.UPDATE_ORDER)
+                    eventPublisher.publish(new OrderUpdatedEvent(reqId, orderId));
+                if (!matchResult.trades().isEmpty())
+                    eventPublisher.publish(new OrderExecutedEvent(reqId, orderId,
+                            matchResult.trades().stream().map(TradeDTO::new).collect(Collectors.toList())));
+                break;
         }
-        if (matchResult.outcome() == MatchingOutcome.NOT_ENOUGH_POSITIONS) {
-            eventPublisher.publish(new OrderRejectedEvent(reqId, orderId,
-                    List.of(Message.SELLER_HAS_NOT_ENOUGH_POSITIONS)));
-            return;
-        }
-        if (matchResult.outcome() == MatchingOutcome.NOT_SATISFY_MEQ) {
-            eventPublisher.publish(new OrderRejectedEvent(reqId, orderId,
-                    List.of(Message.ORDER_NOT_SATISFIED_MEQ)));
-            return;
-        }
-        if (type == OrderEntryType.NEW_ORDER)
-            eventPublisher.publish(new OrderAcceptedEvent(reqId, orderId));
-        else if (type == OrderEntryType.UPDATE_ORDER)
-            eventPublisher.publish(new OrderUpdatedEvent(reqId, orderId));
-        if (!matchResult.trades().isEmpty())
-            eventPublisher.publish(new OrderExecutedEvent(reqId, orderId,
-                    matchResult.trades().stream().map(TradeDTO::new).collect(Collectors.toList())));
     }
 
     private void refreshQueue(Security security) {
@@ -66,7 +78,8 @@ public class OrderHandler {
         while (!res.isEmpty()) {
             for (var pair : res) {
                 var order = (StopLimitOrder) pair.getA();
-                publishResult(pair.getB(), order.getRequestId(), order.getOrderId(), OrderEntryType.ACTIVATED);
+                publishResult(pair.getB(), order.getRequestId(), order.getOrderId(), OrderEntryType.ACTIVATED,
+                        security);
             }
             res = security.getOrderBook().refreshAllQueue(matcher);
         }
@@ -87,7 +100,7 @@ public class OrderHandler {
                 matchResult = security.updateOrder(enterOrderRq, matcher);
 
             publishResult(matchResult, enterOrderRq.getRequestId(), enterOrderRq.getOrderId(),
-                    enterOrderRq.getRequestType());
+                    enterOrderRq.getRequestType(), security);
             refreshQueue(security);
 
         } catch (InvalidRequestException ex) {
@@ -110,9 +123,11 @@ public class OrderHandler {
 
     public void handleChangeState(ChangeMatchingStateRq changeMatchingStateRq) {
         Security security = securityRepository.findSecurityByIsin(changeMatchingStateRq.getSecurityIsin());
-        if (security.getState() == MatchingState.CONTINUOUS && changeMatchingStateRq.getTargetState() == MatchingState.CONTINUOUS) {
+        if (security.getState() == MatchingState.CONTINUOUS
+                && changeMatchingStateRq.getTargetState() == MatchingState.CONTINUOUS) {
             security.changeState(changeMatchingStateRq.getTargetState());
-            eventPublisher.publish(new SecurityStateChangedEvent(LocalDateTime.now(), security.getIsin(), changeMatchingStateRq.getTargetState()));
+            eventPublisher.publish(new SecurityStateChangedEvent(LocalDateTime.now(), security.getIsin(),
+                    changeMatchingStateRq.getTargetState()));
         }
     }
 
@@ -149,9 +164,10 @@ public class OrderHandler {
             errors.add(Message.UNKNOWN_SHAREHOLDER_ID);
         if (enterOrderRq.getPeakSize() < 0 || enterOrderRq.getPeakSize() >= enterOrderRq.getQuantity())
             errors.add(Message.INVALID_PEAK_SIZE);
-        if (enterOrderRq.getMinimumExecutionQuantity() > 0 && security.getState() == MatchingState.AUCTION)
+        if (security != null && enterOrderRq.getMinimumExecutionQuantity() > 0
+                && security.getState() == MatchingState.AUCTION)
             errors.add(Message.MEQ_IN_AUCTION_STATE);
-        if (enterOrderRq.getStopPrice() > 0 && security.getState() == MatchingState.AUCTION)
+        if (security != null && enterOrderRq.getStopPrice() > 0 && security.getState() == MatchingState.AUCTION)
             errors.add(Message.STOP_LIMIT_ORDER_IN_AUCTION_STATE);
         if (!errors.isEmpty())
             throw new InvalidRequestException(errors);
@@ -166,6 +182,4 @@ public class OrderHandler {
         if (!errors.isEmpty())
             throw new InvalidRequestException(errors);
     }
-
-
 }

@@ -22,6 +22,7 @@ public class Security {
     private int lotSize = 1;
     @Builder.Default
     private OrderBook orderBook = new OrderBook();
+    @Builder.Default
     private MatchingState state = MatchingState.CONTINUOUS;
     private int openingPrice;
 
@@ -54,15 +55,13 @@ public class Security {
         }
 
         if (state == MatchingState.AUCTION) {
-            if (order.getSide() == BUY) {
-                if (!matcher.buyOrderEnterAuction(order.getBroker(), order)) {
-                    return MatchResult.notEnoughCredit();
-                }
-                order.getBroker().decreaseCreditBy(order.getValue());
+            if (order.getSide() == BUY && !order.getBroker().tryDecreaase(order)) {
+                return MatchResult.notEnoughCredit();
             }
 
             orderBook.enqueue(order);
-            return matcher.executeAuction(this, openingPrice);
+            openingPrice = getOpeningPrice(matcher.getLastPriceExecuted());
+            return MatchResult.orderEnteredInAuctionMode();
         }
 
         return matcher.execute(order, enterOrderRq.getMinimumExecutionQuantity());
@@ -151,7 +150,7 @@ public class Security {
             return updateNormalOrder(updateOrderRq, matcher, order);
     }
 
-    private int tradedQuantityAtPrice(int price) {
+    public int tradedQuantityAtPrice(int price) {
         var buys = orderBook.getBuyQueue().stream().filter(c -> c.getPrice() >= price)
                 .mapToInt(Order::getQuantity).sum();
         var sells = orderBook.getSellQueue().stream().filter(c -> c.getPrice() <= price)
@@ -209,6 +208,9 @@ public class Security {
     }
 
     public void changeState(MatchingState state) {
+        if (this.state == MatchingState.AUCTION) {
+            // TODO refresh orders with opening price
+        }
         this.state = state;
     }
 }

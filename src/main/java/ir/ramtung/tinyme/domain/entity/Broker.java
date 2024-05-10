@@ -30,4 +30,12 @@ public class Broker {
     public boolean hasEnoughCredit(long amount) {
         return credit >= amount;
     }
+
+    public boolean tryDecreaase(Order newOrder) {
+        if (hasEnoughCredit(newOrder.getValue())) {
+            decreaseCreditBy(newOrder.getValue());
+            return true;
+        }
+        return false;
+    }
 }
