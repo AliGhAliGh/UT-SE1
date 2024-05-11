@@ -9,4 +9,8 @@ public class ChangeMatchingStateRq {
     private String securityIsin;
     private MatchingState targetState;
 
+    public ChangeMatchingStateRq(String isin, MatchingState matchingState) {
+        securityIsin = isin;
+        targetState = matchingState;
+    }
 }
