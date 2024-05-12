@@ -6,6 +6,5 @@ public enum MatchingOutcome {
     NOT_ENOUGH_POSITIONS,
     NOT_SATISFY_MEQ,
     DEACTIVATED,
-    ORDER_ENTERED,
-    AUCTION
+    ORDER_ENTERED
 }

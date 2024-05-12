@@ -10,6 +10,8 @@ import ir.ramtung.tinyme.messaging.request.*;
 import ir.ramtung.tinyme.repository.BrokerRepository;
 import ir.ramtung.tinyme.repository.SecurityRepository;
 import ir.ramtung.tinyme.repository.ShareholderRepository;
+import lombok.var;
+
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -55,9 +57,6 @@ public class OrderHandler {
                 var tradedQuantity = security.tradedQuantityAtPrice(openingPrice);
                 eventPublisher.publish(
                         new OpeningPriceEvent(LocalDateTime.now(), security.getIsin(), openingPrice, tradedQuantity));
-                break;
-            case AUCTION:
-                // TODO publish trade events
                 break;
             default:
                 if (type == OrderEntryType.NEW_ORDER)
@@ -123,9 +122,8 @@ public class OrderHandler {
         Security security = securityRepository.findSecurityByIsin(changeMatchingStateRq.getSecurityIsin());
         if (security.getState() == MatchingState.CONTINUOUS
                 && changeMatchingStateRq.getTargetState() != MatchingState.CONTINUOUS) {
-            security.changeState(changeMatchingStateRq.getTargetState());
-            eventPublisher.publish(new SecurityStateChangedEvent(LocalDateTime.now(), security.getIsin(),
-                    changeMatchingStateRq.getTargetState()));
+            var events = security.changeState(changeMatchingStateRq.getTargetState());
+            events.forEach(event -> eventPublisher.publish(event));
         }
     }
 

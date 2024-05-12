@@ -225,8 +225,6 @@ public class Security {
                             trade.getSell().getOrderId()))
                     .collect(Collectors.toList());
             res.addAll(events);
-        } else if (state == this.state) {
-            return List.of();
         }
         this.state = state;
         return res;
