@@ -135,28 +135,28 @@ public class OrderBook {
                         .sum();
     }
 
-    public LinkedList<Pair<Order, MatchResult>> refreshQueue(LinkedList<Order> queue, Matcher matcher) {
+    public LinkedList<Pair<Order, MatchResult>> refreshQueue(LinkedList<Order> queue, Security security) {
         var it = queue.listIterator();
         var res = new LinkedList<Pair<Order, MatchResult>>();
         while (it.hasNext()) {
             var order = (StopLimitOrder) it.next();
-            if (order.checkActivation(matcher.getLastPriceExecuted())) {
+            if (order.checkActivation(Matcher.getLastPriceExecuted())) {
                 it.remove();
                 order.activate();
-                res.add(new Pair<Order, MatchResult>(order, matcher.execute(order, 0)));
+                res.add(new Pair<Order, MatchResult>(order, security.handleEnterOrder(order, 0)));
             }
         }
 
         return res;
     }
 
-    public LinkedList<Pair<Order, MatchResult>> refreshAllQueue(Matcher matcher) {
+    public LinkedList<Pair<Order, MatchResult>> refreshAllQueue(Security security) {
         var res = new LinkedList<Pair<Order, MatchResult>>();
 
-        var res1 = refreshQueue(deactivatedQueueBuy, matcher);
+        var res1 = refreshQueue(deactivatedQueueBuy, security);
         res.addAll(res1);
 
-        var res2 = refreshQueue(deactivatedQueueSell, matcher);
+        var res2 = refreshQueue(deactivatedQueueSell, security);
         res.addAll(res2);
 
         return res;

@@ -7,7 +7,6 @@ import ir.ramtung.tinyme.messaging.request.EnterOrderRq;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.annotation.DirtiesContext;
@@ -28,8 +27,6 @@ public class BrokerCreditTest2 {
         private Shareholder shareholder;
         private OrderBook orderBook;
         private List<Order> orders;
-        @Autowired
-        private Matcher matcher;
 
         @BeforeEach
         void setupOrderBook() {
@@ -52,7 +49,7 @@ public class BrokerCreditTest2 {
         void new_order_negetive_credit_will_rollback() {
                 Order order = new Order(6, security, Side.BUY, 1000, 16000, broker,
                                 shareholder);
-                MatchResult result = matcher.match(order);
+                MatchResult result = Matcher.match(order);
                 assertThat(result.outcome()).isEqualTo(MatchingOutcome.NOT_ENOUGH_CREDIT);
                 assertThat(result.remainder()).isNull();
                 assertThat(result.trades()).isEmpty();
@@ -65,7 +62,7 @@ public class BrokerCreditTest2 {
         void new_order_has_chance_not_roolback() {
                 Order order = new Order(6, security, Side.BUY, 945, 16000, broker,
                                 shareholder);
-                MatchResult result = matcher.match(order);
+                MatchResult result = Matcher.match(order);
                 assertThat(result.outcome()).isEqualTo(MatchingOutcome.EXECUTED);
                 assertThat(result.remainder().getTotalQuantity()).isEqualTo(0);
                 assertThat(result.trades()).isNotEmpty();
@@ -80,7 +77,7 @@ public class BrokerCreditTest2 {
                 broker.increaseCreditBy(15450);
                 var req = EnterOrderRq.createNewOrderRq(1, security.getIsin(), 6, LocalDateTime.now(), Side.BUY, 1,
                                 15451, broker.getBrokerId(), shareholder.getShareholderId(), 0);
-                var res = security.newOrder(req, broker, shareholder, matcher);
+                var res = security.newOrder(req, broker, shareholder);
                 assertThat(res.outcome()).isEqualTo(MatchingOutcome.NOT_ENOUGH_CREDIT);
                 assertThat(res.trades()).isEmpty();
                 assertThat(security.getOrderBook().getBuyQueue()).isEmpty();
@@ -94,7 +91,7 @@ public class BrokerCreditTest2 {
                 broker.increaseCreditBy(15450);
                 var req = EnterOrderRq.createNewOrderRq(1, security.getIsin(), 6, LocalDateTime.now(), Side.BUY, 1,
                                 15450, broker.getBrokerId(), shareholder.getShareholderId(), 0);
-                var res = security.newOrder(req, broker, shareholder, matcher);
+                var res = security.newOrder(req, broker, shareholder);
                 assertThat(res.trades()).isEmpty();
                 assertThat(security.getOrderBook().getBuyQueue()).isNotEmpty();
                 assertThat(security.getOrderBook().getSellQueue().size()).isEqualTo(5);
@@ -106,8 +103,7 @@ public class BrokerCreditTest2 {
                 orderBook.enqueue(new Order(6, security, Side.SELL, 100, 15000, broker, shareholder));
                 var req = EnterOrderRq.createNewOrderRq(1, security.getIsin(), 7, LocalDateTime.now(), Side.BUY, 110,
                                 15450, 3, shareholder.getShareholderId(), 0);
-                var res = security.newOrder(req, Broker.builder().credit(10_000_000).brokerId(3).build(), shareholder,
-                                matcher);
+                var res = security.newOrder(req, Broker.builder().credit(10_000_000).brokerId(3).build(), shareholder);
                 assertThat(res.outcome()).isEqualTo(MatchingOutcome.EXECUTED);
                 assertThat(res.trades().size()).isEqualTo(1);
                 assertThat(security.getOrderBook().getBuyQueue().getFirst().getTotalQuantity()).isEqualTo(10);
@@ -119,7 +115,7 @@ public class BrokerCreditTest2 {
         void credit_check_after_two_iceberg_order_round() {
                 var req = EnterOrderRq.createNewOrderRq(1, security.getIsin(), 6, LocalDateTime.now(), Side.BUY, 400,
                                 15805, 3, shareholder.getShareholderId(), 400);
-                var res = security.newOrder(req, broker, shareholder, matcher);
+                var res = security.newOrder(req, broker, shareholder);
                 assertThat(res.outcome()).isEqualTo(MatchingOutcome.EXECUTED);
                 assertThat(res.trades().size()).isEqualTo(1);
                 assertThat(security.getOrderBook().getBuyQueue().getFirst().getTotalQuantity()).isEqualTo(50);
@@ -129,7 +125,7 @@ public class BrokerCreditTest2 {
                 var b = Broker.builder().brokerId(4).build();
                 req = EnterOrderRq.createNewOrderRq(2, security.getIsin(), 7, LocalDateTime.now(), Side.SELL, 400,
                                 15805, b.getBrokerId(), shareholder.getShareholderId(), 0);
-                res = security.newOrder(req, b, shareholder, matcher);
+                res = security.newOrder(req, b, shareholder);
                 assertThat(res.outcome()).isEqualTo(MatchingOutcome.EXECUTED);
                 assertThat(res.trades().size()).isEqualTo(1);
                 assertThat(res.trades().getFirst().getTradedValue()).isEqualTo(50 * 15805);// BUG

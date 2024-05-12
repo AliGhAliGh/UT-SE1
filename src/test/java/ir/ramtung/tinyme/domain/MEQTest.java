@@ -2,11 +2,9 @@ package ir.ramtung.tinyme.domain;
 
 import ir.ramtung.tinyme.config.MockedJMSTestConfig;
 import ir.ramtung.tinyme.domain.entity.*;
-import ir.ramtung.tinyme.domain.service.Matcher;
 import ir.ramtung.tinyme.messaging.request.EnterOrderRq;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.annotation.DirtiesContext;
@@ -30,8 +28,6 @@ public class MEQTest {
     private Shareholder shareholder;
     private OrderBook orderBook;
     private List<Order> orders;
-    @Autowired
-    private Matcher matcher;
 
     @BeforeEach
     void setupOrderBook() {
@@ -58,7 +54,7 @@ public class MEQTest {
     void new_sell_order_will_rollback_because_of_meq() {
         var req = EnterOrderRq.createNewOrderRq(1, security.getIsin(), 11, LocalDateTime.now(), Side.SELL, 300, 15700,
                 broker.getBrokerId(), shareholder.getShareholderId(), 0, 250);
-        var result = security.newOrder(req, broker, shareholder, matcher);
+        var result = security.newOrder(req, broker, shareholder);
         assertThat(result.outcome()).isEqualTo(NOT_SATISFY_MEQ);
         assertThat(result.trades()).isEmpty();
         assertThat(security.getOrderBook().getBuyQueue().size()).isEqualTo(5);
@@ -70,7 +66,7 @@ public class MEQTest {
     void new_sell_order_will_accept_with_meq() {
         var req = EnterOrderRq.createNewOrderRq(2, security.getIsin(), 12, LocalDateTime.now(), Side.SELL, 300, 15700,
                 broker.getBrokerId(), shareholder.getShareholderId(), 0, 200);
-        var result = security.newOrder(req, broker, shareholder, matcher);
+        var result = security.newOrder(req, broker, shareholder);
         assertThat(result.outcome()).isEqualTo(EXECUTED);
         assertThat(result.trades()).isNotEmpty();
         assertThat(security.getOrderBook().getBuyQueue().size()).isEqualTo(4);
@@ -82,7 +78,7 @@ public class MEQTest {
     void new_buy_order_will_rollback_because_of_meq() {
         var req = EnterOrderRq.createNewOrderRq(3, security.getIsin(), 13, LocalDateTime.now(), BUY, 300, 15800,
                 broker.getBrokerId(), shareholder.getShareholderId(), 0, 250);
-        var result = security.newOrder(req, broker, shareholder, matcher);
+        var result = security.newOrder(req, broker, shareholder);
         assertThat(result.outcome()).isEqualTo(NOT_SATISFY_MEQ);
         assertThat(result.trades()).isEmpty();
         assertThat(security.getOrderBook().getBuyQueue().size()).isEqualTo(5);
@@ -94,7 +90,7 @@ public class MEQTest {
     void new_buy_order_will_accept_with_meq() {
         var req = EnterOrderRq.createNewOrderRq(4, security.getIsin(), 14, LocalDateTime.now(), BUY, 300, 15800,
                 broker.getBrokerId(), shareholder.getShareholderId(), 0, 200);
-        var result = security.newOrder(req, broker, shareholder, matcher);
+        var result = security.newOrder(req, broker, shareholder);
         assertThat(result.outcome()).isEqualTo(EXECUTED);
         assertThat(result.trades()).isNotEmpty();
         assertThat(security.getOrderBook().getBuyQueue().size()).isEqualTo(6);
@@ -106,7 +102,7 @@ public class MEQTest {
     void old_buy_order_will_accept_with_meq() {
         var req = EnterOrderRq.createNewOrderRq(4, security.getIsin(), 14, LocalDateTime.now(), BUY, 300, 15800,
                 broker.getBrokerId(), shareholder.getShareholderId(), 0, 200);
-        var result = security.newOrder(req, broker, shareholder, matcher);
+        var result = security.newOrder(req, broker, shareholder);
         assertThat(result.outcome()).isEqualTo(EXECUTED);
         assertThat(result.trades()).isNotEmpty();
         assertThat(security.getOrderBook().getBuyQueue().size()).isEqualTo(6);
@@ -114,7 +110,7 @@ public class MEQTest {
         assertThat(broker.getCredit()).isEqualTo(98_420_000);
         req = EnterOrderRq.createNewOrderRq(4, security.getIsin(), 14, LocalDateTime.now(), SELL, 100, 15800,
                 broker.getBrokerId(), shareholder.getShareholderId(), 0, 100);
-        result = security.newOrder(req, broker, shareholder, matcher);
+        result = security.newOrder(req, broker, shareholder);
         assertThat(result.outcome()).isEqualTo(EXECUTED);
         assertThat(result.trades()).isNotEmpty();
         assertThat(security.getOrderBook().getBuyQueue().size()).isEqualTo(5);

@@ -5,12 +5,17 @@ import ir.ramtung.tinyme.messaging.request.DeleteOrderRq;
 import ir.ramtung.tinyme.messaging.request.EnterOrderRq;
 import ir.ramtung.tinyme.domain.service.Matcher;
 import ir.ramtung.tinyme.messaging.Message;
+import ir.ramtung.tinyme.messaging.event.Event;
+import ir.ramtung.tinyme.messaging.event.SecurityStateChangedEvent;
+import ir.ramtung.tinyme.messaging.event.TradeEvent;
 import ir.ramtung.tinyme.messaging.request.MatchingState;
 import lombok.Builder;
 import lombok.Getter;
 import static ir.ramtung.tinyme.domain.entity.Side.BUY;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Getter
 @Builder
@@ -26,7 +31,7 @@ public class Security {
     private MatchingState state = MatchingState.CONTINUOUS;
     private int openingPrice;
 
-    public MatchResult newOrder(EnterOrderRq enterOrderRq, Broker broker, Shareholder shareholder, Matcher matcher) {
+    public MatchResult newOrder(EnterOrderRq enterOrderRq, Broker broker, Shareholder shareholder) {
         if (enterOrderRq.getSide() == Side.SELL && !shareholder.hasEnoughPositionsOn(this,
                 orderBook.totalSellQuantityByShareholder(shareholder) + enterOrderRq.getQuantity()))
             return MatchResult.notEnoughPositions();
@@ -46,7 +51,11 @@ public class Security {
                     enterOrderRq.getQuantity(), enterOrderRq.getPrice(), broker, shareholder,
                     enterOrderRq.getEntryTime(), enterOrderRq.getPeakSize());
 
-        if (order instanceof StopLimitOrder sl && !sl.checkActivation(matcher.getLastPriceExecuted())) {
+        return handleEnterOrder(order, enterOrderRq.getMinimumExecutionQuantity());
+    }
+
+    public MatchResult handleEnterOrder(Order order, int meq) {
+        if (order instanceof StopLimitOrder sl && !sl.checkActivation(Matcher.getLastPriceExecuted())) {
             if (order.getSide() == BUY && !order.getBroker().hasEnoughCredit(order.getValue()))
                 return MatchResult.notEnoughCredit();
             sl.deactivate();
@@ -60,11 +69,11 @@ public class Security {
             }
 
             orderBook.enqueue(order);
-            openingPrice = getOpeningPrice(matcher.getLastPriceExecuted());
+            openingPrice = getOpeningPrice(Matcher.getLastPriceExecuted());
             return MatchResult.orderEnteredInAuctionMode();
         }
 
-        return matcher.execute(order, enterOrderRq.getMinimumExecutionQuantity());
+        return Matcher.execute(order, meq);
     }
 
     public void deleteOrder(DeleteOrderRq deleteOrderRq) throws InvalidRequestException {
@@ -76,7 +85,7 @@ public class Security {
         orderBook.removeOrder(order);
     }
 
-    private MatchResult updateNormalOrder(EnterOrderRq updateOrderRq, Matcher matcher, Order order) {
+    private MatchResult updateNormalOrder(EnterOrderRq updateOrderRq, Order order) {
         boolean losesPriority = order.isQuantityIncreased(updateOrderRq.getQuantity())
                 || updateOrderRq.getPrice() != order.getPrice()
                 || ((order instanceof IcebergOrder icebergOrder)
@@ -96,7 +105,7 @@ public class Security {
             order.markAsNew();
 
         orderBook.removeActiveOrder(updateOrderRq.getSide(), updateOrderRq.getOrderId());
-        MatchResult matchResult = matcher.execute(order, updateOrderRq.getMinimumExecutionQuantity());
+        MatchResult matchResult = Matcher.execute(order, updateOrderRq.getMinimumExecutionQuantity());
         if (matchResult.outcome() != MatchingOutcome.EXECUTED) {
             orderBook.enqueue(originalOrder);
             if (updateOrderRq.getSide() == Side.BUY) {
@@ -126,7 +135,7 @@ public class Security {
         return MatchResult.executed(null, List.of());
     }
 
-    public MatchResult updateOrder(EnterOrderRq updateOrderRq, Matcher matcher) throws InvalidRequestException {
+    public MatchResult updateOrder(EnterOrderRq updateOrderRq) throws InvalidRequestException {
         Order order = orderBook.findByOrderId(updateOrderRq.getSide(), updateOrderRq.getOrderId());
         if (order == null)
             throw new InvalidRequestException(Message.ORDER_ID_NOT_FOUND);
@@ -147,7 +156,7 @@ public class Security {
         if (order instanceof StopLimitOrder sl && !sl.isActive())
             return updateSlOrder(updateOrderRq, sl);
         else
-            return updateNormalOrder(updateOrderRq, matcher, order);
+            return updateNormalOrder(updateOrderRq, order);
     }
 
     public int tradedQuantityAtPrice(int price) {
@@ -207,10 +216,19 @@ public class Security {
         return openingPrice;
     }
 
-    public void changeState(MatchingState state) {
+    public List<Event> changeState(MatchingState state) {
+        List<Event> res = List.of(new SecurityStateChangedEvent(LocalDateTime.now(), isin, state));
         if (this.state == MatchingState.AUCTION) {
-            // TODO refresh orders with opening price
+            var events = Matcher.executeAcuction(this).stream()
+                    .map(trade -> (Event) new TradeEvent(LocalDateTime.now(), isin,
+                            trade.getPrice(), trade.getQuantity(), trade.getBuy().getOrderId(),
+                            trade.getSell().getOrderId()))
+                    .collect(Collectors.toList());
+            res.addAll(events);
+        } else if (state == this.state) {
+            return List.of();
         }
         this.state = state;
+        return res;
     }
 }

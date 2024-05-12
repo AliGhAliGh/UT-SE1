@@ -51,8 +51,6 @@ public class StopPriceTest {
         BrokerRepository brokerRepository;
         @Autowired
         ShareholderRepository shareholderRepository;
-        @Autowired
-        private Matcher matcher;
 
         @BeforeEach
         void setupOrderBook() {
@@ -70,7 +68,7 @@ public class StopPriceTest {
                 brokerRepository.addBroker(brokerBuy);
                 brokerRepository.addBroker(brokerSell);
 
-                matcher.setLastPriceExecuted(15700);
+                Matcher.setLastPriceExecuted(15700);
 
                 orderBook = security.getOrderBook();
                 orders = Arrays.asList(
@@ -107,7 +105,7 @@ public class StopPriceTest {
 
         @Test
         public void deleting_deactivated_order() {
-                matcher.setLastPriceExecuted(15900);
+                Matcher.setLastPriceExecuted(15900);
                 var req = EnterOrderRq.createNewOrderRq(1, security.getIsin(), 11, LocalDateTime.now(), SELL, 2, 15700,
                                 brokerSell.getBrokerId(), shareholder.getShareholderId(), 0, 0, 15800);
                 orderHandler.handleEnterOrder(req);
@@ -134,7 +132,7 @@ public class StopPriceTest {
                 req = EnterOrderRq.createNewOrderRq(2, security.getIsin(), 11,
                                 LocalDateTime.now(), BUY, 2, 15600,
                                 brokerBuy.getBrokerId(), shareholder.getShareholderId(), 0, 0, 15900);
-                MatchResult res = security.newOrder(req, brokerBuy, shareholder, matcher);
+                MatchResult res = security.newOrder(req, brokerBuy, shareholder);
                 assertThat(res.outcome()).isEqualTo(MatchingOutcome.DEACTIVATED);
 
                 req = EnterOrderRq.createUpdateOrderRq(3, security.getIsin(), 11,
@@ -146,7 +144,7 @@ public class StopPriceTest {
 
         @Test
         public void checking_brokers_credit_just_after_activating() {
-                matcher.setLastPriceExecuted(15600);
+                Matcher.setLastPriceExecuted(15600);
                 brokerBuy.decreaseCreditBy(99_968_400L); // credit = 2 * 15800
 
                 var req = EnterOrderRq.createNewOrderRq(1, security.getIsin(), 11,
@@ -167,7 +165,7 @@ public class StopPriceTest {
 
         @Test
         public void update_reject_not_have_credit() {
-                matcher.setLastPriceExecuted(15600);
+                Matcher.setLastPriceExecuted(15600);
                 brokerBuy.decreaseCreditBy(99_968_400L); // credit = 2 * 15800
 
                 var req = EnterOrderRq.createNewOrderRq(1, security.getIsin(), 11,
@@ -231,7 +229,7 @@ public class StopPriceTest {
 
         @Test
         public void updating_quantity_and_price_of_deactivated_stop_price_order() {
-                matcher.setLastPriceExecuted(15600);
+                Matcher.setLastPriceExecuted(15600);
                 var req = EnterOrderRq.createNewOrderRq(2, security.getIsin(), 11, LocalDateTime.now(), BUY, 2, 15600,
                                 brokerBuy.getBrokerId(), shareholder.getShareholderId(), 0, 0, 15700);
                 orderHandler.handleEnterOrder(req);
@@ -290,7 +288,7 @@ public class StopPriceTest {
 
         @Test
         public void several_deactivated_order_get_activated_at_the_same_time() {
-                matcher.setLastPriceExecuted(0);
+                Matcher.setLastPriceExecuted(0);
                 var req = EnterOrderRq.createNewOrderRq(1, security.getIsin(), 11, LocalDateTime.now(), BUY, 6, 15700,
                                 brokerBuy.getBrokerId(), shareholder.getShareholderId(), 0, 0, 15800);
                 orderHandler.handleEnterOrder(req);
@@ -319,7 +317,7 @@ public class StopPriceTest {
 
         @Test
         public void several_deactivated_order_trades_with_each_other() {
-                matcher.setLastPriceExecuted(0);
+                Matcher.setLastPriceExecuted(0);
                 var req = EnterOrderRq.createNewOrderRq(1, security.getIsin(), 12, LocalDateTime.now(), BUY, 7, 15600,
                                 brokerBuy.getBrokerId(), shareholder.getShareholderId(), 0, 0, 15800);
                 orderHandler.handleEnterOrder(req);

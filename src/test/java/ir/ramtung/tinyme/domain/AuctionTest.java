@@ -40,8 +40,6 @@ public class AuctionTest {
         BrokerRepository brokerRepository;
         @Autowired
         ShareholderRepository shareholderRepository;
-        @Autowired
-        private Matcher matcher;
 
         @BeforeEach
         void setupOrderBook() {
@@ -59,7 +57,7 @@ public class AuctionTest {
                 brokerRepository.addBroker(brokerBuy);
                 brokerRepository.addBroker(brokerSell);
 
-                matcher.setLastPriceExecuted(15700);
+                Matcher.setLastPriceExecuted(15700);
 
                 orderBook = security.getOrderBook();
         }
@@ -72,12 +70,12 @@ public class AuctionTest {
                                 new Order(6, security, Side.BUY, 200, 15900, brokerBuy, shareholder),
                                 new Order(7, security, Side.BUY, 200, 15910, brokerBuy, shareholder));
                 orders.forEach(order -> orderBook.enqueue(order));
-                matcher.setLastPriceExecuted(15850);
-                assertThat(security.getOpeningPrice(matcher.getLastPriceExecuted())).isEqualTo(15850);
-                matcher.setLastPriceExecuted(15950);
-                assertThat(security.getOpeningPrice(matcher.getLastPriceExecuted())).isEqualTo(15900);
-                matcher.setLastPriceExecuted(15750);
-                assertThat(security.getOpeningPrice(matcher.getLastPriceExecuted())).isEqualTo(15810);
+                Matcher.setLastPriceExecuted(15850);
+                assertThat(security.getOpeningPrice(Matcher.getLastPriceExecuted())).isEqualTo(15850);
+                Matcher.setLastPriceExecuted(15950);
+                assertThat(security.getOpeningPrice(Matcher.getLastPriceExecuted())).isEqualTo(15900);
+                Matcher.setLastPriceExecuted(15750);
+                assertThat(security.getOpeningPrice(Matcher.getLastPriceExecuted())).isEqualTo(15810);
         }
 
         @Test
@@ -87,7 +85,7 @@ public class AuctionTest {
                                 new Order(6, security, Side.BUY, 1, 15900, brokerBuy, shareholder),
                                 new Order(7, security, Side.BUY, 200, 15910, brokerBuy, shareholder));
                 orders.forEach(order -> orderBook.enqueue(order));
-                matcher.setLastPriceExecuted(15920);
-                assertThat(security.getOpeningPrice(matcher.getLastPriceExecuted())).isEqualTo(15910);
+                Matcher.setLastPriceExecuted(15920);
+                assertThat(security.getOpeningPrice(Matcher.getLastPriceExecuted())).isEqualTo(15910);
         }
 }

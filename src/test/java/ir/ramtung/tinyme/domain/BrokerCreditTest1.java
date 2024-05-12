@@ -4,10 +4,8 @@ import ir.ramtung.tinyme.config.MockedJMSTestConfig;
 import ir.ramtung.tinyme.domain.entity.*;
 import ir.ramtung.tinyme.messaging.request.DeleteOrderRq;
 import ir.ramtung.tinyme.messaging.request.EnterOrderRq;
-import ir.ramtung.tinyme.domain.service.Matcher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 
@@ -27,8 +25,6 @@ public class BrokerCreditTest1 {
     private long seller_credit;
     private Shareholder shareholder;
     private List<Order> orders;
-    @Autowired
-    Matcher matcher;
 
     @BeforeEach
     void setupOrderBook() {
@@ -86,7 +82,7 @@ public class BrokerCreditTest1 {
         EnterOrderRq orderReq = EnterOrderRq.createNewOrderRq(1, security.getIsin(), 11,
                 LocalDateTime.now(), Side.BUY, 100, 16000, buyer.getBrokerId(),
                 shareholder.getShareholderId(), 0);
-        security.newOrder(orderReq, buyer, shareholder, matcher);
+        security.newOrder(orderReq, buyer, shareholder);
 
         long buyer_expected_value = buyer_credit - (15800 * 100);
         long seller_expected_value = seller_credit + (15800 * 100);
@@ -100,7 +96,7 @@ public class BrokerCreditTest1 {
         EnterOrderRq orderReq = EnterOrderRq.createNewOrderRq(1, security.getIsin(), 11,
                 LocalDateTime.now(), Side.BUY, 350, 15800, buyer.getBrokerId(),
                 shareholder.getShareholderId(), 0);
-        security.newOrder(orderReq, buyer, shareholder, matcher);
+        security.newOrder(orderReq, buyer, shareholder);
 
         long buyer_expected_value = buyer_credit - (15800 * 350);
         long seller_expected_value = seller_credit + (15800 * 350);
@@ -114,7 +110,7 @@ public class BrokerCreditTest1 {
         EnterOrderRq orderReq = EnterOrderRq.createNewOrderRq(1, security.getIsin(), 11,
                 LocalDateTime.now(), Side.BUY, 400, 16000, buyer.getBrokerId(),
                 shareholder.getShareholderId(), 0);
-        security.newOrder(orderReq, buyer, shareholder, matcher);
+        security.newOrder(orderReq, buyer, shareholder);
 
         long expected_value = buyer_credit - (15800 * 350 + 50 * 15810);
 
@@ -126,7 +122,7 @@ public class BrokerCreditTest1 {
         EnterOrderRq orderReq = EnterOrderRq.createNewOrderRq(1, security.getIsin(), 11,
                 LocalDateTime.now(), Side.BUY, 100, 15000, buyer.getBrokerId(),
                 shareholder.getShareholderId(), 0);
-        security.newOrder(orderReq, buyer, shareholder, matcher);
+        security.newOrder(orderReq, buyer, shareholder);
 
         long buyer_expected_value = buyer_credit - (100 * 15000);
         long seller_expected_value = seller_credit;
@@ -140,7 +136,7 @@ public class BrokerCreditTest1 {
         EnterOrderRq orderReq = EnterOrderRq.createNewOrderRq(1, security.getIsin(), 11,
                 LocalDateTime.now(), Side.BUY, 400, 15805, buyer.getBrokerId(),
                 shareholder.getShareholderId(), 0);
-        security.newOrder(orderReq, buyer, shareholder, matcher);
+        security.newOrder(orderReq, buyer, shareholder);
 
         long buyer_expected_value = buyer_credit - (350 * 15800 + 50 * 15805);
         long seller_expected_value = seller_credit + (350 * 15800);
@@ -154,7 +150,7 @@ public class BrokerCreditTest1 {
         EnterOrderRq orderReq = EnterOrderRq.createNewOrderRq(1, security.getIsin(), 11,
                 LocalDateTime.now(), Side.BUY, 800, 16000, buyer.getBrokerId(),
                 shareholder.getShareholderId(), 0);
-        security.newOrder(orderReq, buyer, shareholder, matcher);
+        security.newOrder(orderReq, buyer, shareholder);
 
         long buyer_expected_value = buyer_credit;
         long seller_expected_value = seller_credit;
@@ -168,7 +164,7 @@ public class BrokerCreditTest1 {
         EnterOrderRq orderReq = EnterOrderRq.createNewOrderRq(1, security.getIsin(), 11,
                 LocalDateTime.now(), Side.SELL, 100, 15000, seller.getBrokerId(),
                 shareholder.getShareholderId(), 0);
-        security.newOrder(orderReq, seller, shareholder, matcher);
+        security.newOrder(orderReq, seller, shareholder);
 
         long seller_expected_value = seller_credit + (100 * 15700);
         long buyer_expected_value = buyer_credit;
@@ -182,7 +178,7 @@ public class BrokerCreditTest1 {
         EnterOrderRq orderReq = EnterOrderRq.createNewOrderRq(1, security.getIsin(), 11,
                 LocalDateTime.now(), Side.SELL, 304, 15700, seller.getBrokerId(),
                 shareholder.getShareholderId(), 0);
-        security.newOrder(orderReq, seller, shareholder, matcher);
+        security.newOrder(orderReq, seller, shareholder);
 
         long seller_expected_value = seller_credit + (304 * 15700);
         long buyer_expected_value = buyer_credit;
@@ -196,7 +192,7 @@ public class BrokerCreditTest1 {
         EnterOrderRq orderReq = EnterOrderRq.createNewOrderRq(1, security.getIsin(), 11,
                 LocalDateTime.now(), Side.SELL, 347, 15000, seller.getBrokerId(),
                 shareholder.getShareholderId(), 0);
-        security.newOrder(orderReq, seller, shareholder, matcher);
+        security.newOrder(orderReq, seller, shareholder);
 
         long seller_expected_value = seller_credit + (304 * 15700 + 43 * 15500);
         long buyer_expected_value = buyer_credit;
@@ -210,7 +206,7 @@ public class BrokerCreditTest1 {
         EnterOrderRq orderReq = EnterOrderRq.createNewOrderRq(1, security.getIsin(), 11,
                 LocalDateTime.now(), Side.SELL, 100, 16000, seller.getBrokerId(),
                 shareholder.getShareholderId(), 0);
-        security.newOrder(orderReq, seller, shareholder, matcher);
+        security.newOrder(orderReq, seller, shareholder);
 
         long seller_expected_value = seller_credit;
         long buyer_expected_value = buyer_credit;
@@ -224,7 +220,7 @@ public class BrokerCreditTest1 {
         EnterOrderRq orderReq = EnterOrderRq.createNewOrderRq(1, security.getIsin(), 11,
                 LocalDateTime.now(), Side.SELL, 350, 15460, seller.getBrokerId(),
                 shareholder.getShareholderId(), 0);
-        security.newOrder(orderReq, seller, shareholder, matcher);
+        security.newOrder(orderReq, seller, shareholder);
 
         long seller_expected_value = seller_credit + (304 * 15700 + 43 * 15500);
         long buyer_expected_value = buyer_credit;
@@ -239,7 +235,7 @@ public class BrokerCreditTest1 {
                 LocalDateTime.now(), Side.BUY, 100, 16000, buyer.getBrokerId(),
                 shareholder.getShareholderId(), 0);
 
-        assertThatNoException().isThrownBy(() -> security.updateOrder(updateOrderRq, matcher));
+        assertThatNoException().isThrownBy(() -> security.updateOrder(updateOrderRq));
 
         long buyer_expected_value = buyer_credit + (304 * 15700 - 100 * 15800);
         long seller_expected_value = seller_credit + (100 * 15800);
@@ -254,7 +250,7 @@ public class BrokerCreditTest1 {
                 LocalDateTime.now(), Side.BUY, 350, 15800, buyer.getBrokerId(),
                 shareholder.getShareholderId(), 0);
 
-        assertThatNoException().isThrownBy(() -> security.updateOrder(updateOrderRq, matcher));
+        assertThatNoException().isThrownBy(() -> security.updateOrder(updateOrderRq));
 
         long buyer_expected_value = buyer_credit + (304 * 15700 - 350 * 15800);
         long seller_expected_value = seller_credit + (350 * 15800);
@@ -269,7 +265,7 @@ public class BrokerCreditTest1 {
                 LocalDateTime.now(), Side.BUY, 400, 16000, buyer.getBrokerId(),
                 shareholder.getShareholderId(), 0);
 
-        assertThatNoException().isThrownBy(() -> security.updateOrder(updateOrderRq, matcher));
+        assertThatNoException().isThrownBy(() -> security.updateOrder(updateOrderRq));
 
         long buyer_expected_value = buyer_credit + (304 * 15700 - 350 * 15800 - 50 * 15810);
         long seller_expected_value = seller_credit + (350 * 15800 + 50 * 15810);
@@ -284,7 +280,7 @@ public class BrokerCreditTest1 {
                 LocalDateTime.now(), Side.BUY, 100, 15000, buyer.getBrokerId(),
                 shareholder.getShareholderId(), 0);
 
-        assertThatNoException().isThrownBy(() -> security.updateOrder(updateOrderRq, matcher));
+        assertThatNoException().isThrownBy(() -> security.updateOrder(updateOrderRq));
 
         long buyer_expected_value = buyer_credit + (304 * 15700 - 100 * 15000);
         long seller_expected_value = seller_credit;
@@ -299,7 +295,7 @@ public class BrokerCreditTest1 {
                 LocalDateTime.now(), Side.BUY, 400, 15805, buyer.getBrokerId(),
                 shareholder.getShareholderId(), 0);
 
-        assertThatNoException().isThrownBy(() -> security.updateOrder(updateOrderRq, matcher));
+        assertThatNoException().isThrownBy(() -> security.updateOrder(updateOrderRq));
 
         long buyer_expected_value = buyer_credit + (304 * 15700 - 350 * 15800 - 50 * 15805);
         long seller_expected_value = seller_credit + (350 * 15800);
@@ -314,7 +310,7 @@ public class BrokerCreditTest1 {
                 LocalDateTime.now(), Side.BUY, 800, 16000, buyer.getBrokerId(),
                 shareholder.getShareholderId(), 0);
 
-        assertThatNoException().isThrownBy(() -> security.updateOrder(updateOrderRq, matcher));
+        assertThatNoException().isThrownBy(() -> security.updateOrder(updateOrderRq));
 
         long buyer_expected_value = buyer_credit - 7871700;
         long seller_expected_value = seller_credit + 12644500;
@@ -329,7 +325,7 @@ public class BrokerCreditTest1 {
                 LocalDateTime.now(), Side.SELL, 100, 15000, seller.getBrokerId(),
                 shareholder.getShareholderId(), 0);
 
-        assertThatNoException().isThrownBy(() -> security.updateOrder(updateOrderRq, matcher));
+        assertThatNoException().isThrownBy(() -> security.updateOrder(updateOrderRq));
 
         long seller_expected_value = seller_credit + (100 * 15700);
         long buyer_expected_value = buyer_credit;
@@ -344,7 +340,7 @@ public class BrokerCreditTest1 {
                 LocalDateTime.now(), Side.SELL, 304, 15700, seller.getBrokerId(),
                 shareholder.getShareholderId(), 0);
 
-        assertThatNoException().isThrownBy(() -> security.updateOrder(updateOrderRq, matcher));
+        assertThatNoException().isThrownBy(() -> security.updateOrder(updateOrderRq));
 
         long seller_expected_value = seller_credit + (304 * 15700);
         long buyer_expected_value = buyer_credit;
@@ -359,7 +355,7 @@ public class BrokerCreditTest1 {
                 LocalDateTime.now(), Side.SELL, 347, 15000, seller.getBrokerId(),
                 shareholder.getShareholderId(), 0);
 
-        assertThatNoException().isThrownBy(() -> security.updateOrder(updateOrderRq, matcher));
+        assertThatNoException().isThrownBy(() -> security.updateOrder(updateOrderRq));
 
         long seller_expected_value = seller_credit + (304 * 15700 + 43 * 15500);
         long buyer_expected_value = buyer_credit;
@@ -374,7 +370,7 @@ public class BrokerCreditTest1 {
                 LocalDateTime.now(), Side.SELL, 100, 16000, seller.getBrokerId(),
                 shareholder.getShareholderId(), 0);
 
-        assertThatNoException().isThrownBy(() -> security.updateOrder(updateOrderRq, matcher));
+        assertThatNoException().isThrownBy(() -> security.updateOrder(updateOrderRq));
 
         long seller_expected_value = seller_credit;
         long buyer_expected_value = buyer_credit;
@@ -389,7 +385,7 @@ public class BrokerCreditTest1 {
                 LocalDateTime.now(), Side.SELL, 350, 15460, seller.getBrokerId(),
                 shareholder.getShareholderId(), 0);
 
-        assertThatNoException().isThrownBy(() -> security.updateOrder(updateOrderRq, matcher));
+        assertThatNoException().isThrownBy(() -> security.updateOrder(updateOrderRq));
 
         long seller_expected_value = seller_credit + (304 * 15700 + 43 * 15500);
         long buyer_expected_value = buyer_credit;
@@ -432,7 +428,7 @@ public class BrokerCreditTest1 {
         EnterOrderRq orderReq = EnterOrderRq.createNewOrderRq(1, security.getIsin(), 11,
                 LocalDateTime.now(), Side.BUY, 120, 15750, buyer.getBrokerId(),
                 shareholder.getShareholderId(), 0);
-        security.newOrder(orderReq, buyer, shareholder, matcher);
+        security.newOrder(orderReq, buyer, shareholder);
 
         long buyer_expected_value = buyer_credit - (120 * 15700);
         long seller_expected_value = seller_credit + (120 * 15700);
@@ -451,7 +447,7 @@ public class BrokerCreditTest1 {
         EnterOrderRq orderReq = EnterOrderRq.createNewOrderRq(1, security.getIsin(), 11,
                 LocalDateTime.now(), Side.BUY, 300, 15750, buyer.getBrokerId(),
                 shareholder.getShareholderId(), 0);
-        security.newOrder(orderReq, buyer, shareholder, matcher);
+        security.newOrder(orderReq, buyer, shareholder);
 
         long buyer_expected_value = buyer_credit - (250 * 15700 + 50 * 15750);
         long seller_expected_value = seller_credit + (250 * 15700);
@@ -470,12 +466,12 @@ public class BrokerCreditTest1 {
         EnterOrderRq orderReq1 = EnterOrderRq.createNewOrderRq(1, security.getIsin(), 13,
                 LocalDateTime.now(), Side.BUY, 300, 15750, buyer.getBrokerId(),
                 shareholder.getShareholderId(), 0);
-        security.newOrder(orderReq1, buyer, shareholder, matcher);
+        security.newOrder(orderReq1, buyer, shareholder);
 
         EnterOrderRq orderReq2 = EnterOrderRq.createNewOrderRq(1, security.getIsin(), 14,
                 LocalDateTime.now(), Side.BUY, 300, 15750, buyer.getBrokerId(),
                 shareholder.getShareholderId(), 0);
-        security.newOrder(orderReq2, buyer, shareholder, matcher);
+        security.newOrder(orderReq2, buyer, shareholder);
 
         long buyer_expected_value = buyer_credit - (300 * 15700 + 200 * 15700 + 100 * 15750);
         long seller_expected_value = seller_credit + (300 * 15700 + 200 * 15700);
@@ -494,7 +490,7 @@ public class BrokerCreditTest1 {
         EnterOrderRq orderReq1 = EnterOrderRq.createNewOrderRq(1, security.getIsin(), 13,
                 LocalDateTime.now(), Side.BUY, 150, 15750, buyer.getBrokerId(),
                 shareholder.getShareholderId(), 100);
-        security.newOrder(orderReq1, buyer, shareholder, matcher);
+        security.newOrder(orderReq1, buyer, shareholder);
 
         long buyer_expected_value = buyer_credit - (150 * 15700);
         long seller_expected_value = seller_credit + (150 * 15700);
@@ -513,7 +509,7 @@ public class BrokerCreditTest1 {
         EnterOrderRq orderReq = EnterOrderRq.createNewOrderRq(1, security.getIsin(), 13,
                 LocalDateTime.now(), Side.SELL, 120, 15750, seller.getBrokerId(),
                 shareholder.getShareholderId(), 0);
-        security.newOrder(orderReq, seller, shareholder, matcher);
+        security.newOrder(orderReq, seller, shareholder);
 
         long seller_expected_value = seller_credit + (120 * 15760);
         long buyer_expected_value = buyer_credit;
@@ -532,7 +528,7 @@ public class BrokerCreditTest1 {
         EnterOrderRq orderReq = EnterOrderRq.createNewOrderRq(1, security.getIsin(), 13,
                 LocalDateTime.now(), Side.SELL, 300, 15750, seller.getBrokerId(),
                 shareholder.getShareholderId(), 0);
-        security.newOrder(orderReq, seller, shareholder, matcher);
+        security.newOrder(orderReq, seller, shareholder);
 
         long seller_expected_value = seller_credit + (250 * 15760);
         long buyer_expected_value = buyer_credit;
@@ -551,7 +547,7 @@ public class BrokerCreditTest1 {
         EnterOrderRq orderReq = EnterOrderRq.createNewOrderRq(1, security.getIsin(), 13,
                 LocalDateTime.now(), Side.SELL, 120, 15750, seller.getBrokerId(),
                 shareholder.getShareholderId(), 0);
-        security.newOrder(orderReq, seller, shareholder, matcher);
+        security.newOrder(orderReq, seller, shareholder);
 
         long seller_expected_value = seller_credit + (120 * 15760);
         long buyer_expected_value = buyer_credit;
@@ -570,7 +566,7 @@ public class BrokerCreditTest1 {
         EnterOrderRq orderReq = EnterOrderRq.createNewOrderRq(1, security.getIsin(), 13,
                 LocalDateTime.now(), Side.SELL, 150, 15750, seller.getBrokerId(),
                 shareholder.getShareholderId(), 100);
-        security.newOrder(orderReq, seller, shareholder, matcher);
+        security.newOrder(orderReq, seller, shareholder);
 
         long seller_expected_value = seller_credit + (150 * 15760);
         long buyer_expected_value = buyer_credit;
@@ -579,53 +575,51 @@ public class BrokerCreditTest1 {
         assertThat(buyer.getCredit()).isEqualTo(buyer_expected_value);
     }
 
-     @Test
-     void update_buy_iceberg() {
-     IcebergOrder order1 = new IcebergOrder(11, security, Side.BUY, 250, 15350,
-     buyer, shareholder, 100);
-     IcebergOrder order2 = new IcebergOrder(12, security, Side.SELL, 250, 15700,
-     seller, shareholder, 100);
-     security.getOrderBook().enqueue(order1);
-     security.getOrderBook().enqueue(order2);
+    @Test
+    void update_buy_iceberg() {
+        IcebergOrder order1 = new IcebergOrder(11, security, Side.BUY, 250, 15350,
+                buyer, shareholder, 100);
+        IcebergOrder order2 = new IcebergOrder(12, security, Side.SELL, 250, 15700,
+                seller, shareholder, 100);
+        security.getOrderBook().enqueue(order1);
+        security.getOrderBook().enqueue(order2);
 
-     EnterOrderRq updateOrderRq = EnterOrderRq.createUpdateOrderRq(1,
-     security.getIsin(), 11,
-     LocalDateTime.now(), Side.BUY, 250, 15800, buyer.getBrokerId(),
-     shareholder.getShareholderId(), 100);
+        EnterOrderRq updateOrderRq = EnterOrderRq.createUpdateOrderRq(1,
+                security.getIsin(), 11,
+                LocalDateTime.now(), Side.BUY, 250, 15800, buyer.getBrokerId(),
+                shareholder.getShareholderId(), 100);
 
-     assertThatNoException().isThrownBy(() -> security.updateOrder(updateOrderRq,
-     matcher));
+        assertThatNoException().isThrownBy(() -> security.updateOrder(updateOrderRq));
 
-     long buyer_expected_value = 9912500;
-     long seller_expected_value = seller_credit + 3925000;
+        long buyer_expected_value = 9912500;
+        long seller_expected_value = seller_credit + 3925000;
 
-     assertThat(buyer.getCredit()).isEqualTo(buyer_expected_value);
-     assertThat(seller.getCredit()).isEqualTo(seller_expected_value);
-     }
+        assertThat(buyer.getCredit()).isEqualTo(buyer_expected_value);
+        assertThat(seller.getCredit()).isEqualTo(seller_expected_value);
+    }
 
-     @Test
-     void update_sell_iceberg() {
-     IcebergOrder order1 = new IcebergOrder(11, security, Side.BUY, 250, 15350,
-     buyer, shareholder, 100);
-     IcebergOrder order2 = new IcebergOrder(12, security, Side.SELL, 250, 15700,
-     seller, shareholder, 100);
-     security.getOrderBook().enqueue(order1);
-     security.getOrderBook().enqueue(order2);
+    @Test
+    void update_sell_iceberg() {
+        IcebergOrder order1 = new IcebergOrder(11, security, Side.BUY, 250, 15350,
+                buyer, shareholder, 100);
+        IcebergOrder order2 = new IcebergOrder(12, security, Side.SELL, 250, 15700,
+                seller, shareholder, 100);
+        security.getOrderBook().enqueue(order1);
+        security.getOrderBook().enqueue(order2);
 
-     EnterOrderRq updateOrderRq = EnterOrderRq.createUpdateOrderRq(1,
-     security.getIsin(), 12,
-     LocalDateTime.now(), Side.SELL, 250, 15500, seller.getBrokerId(),
-     shareholder.getShareholderId(), 100);
+        EnterOrderRq updateOrderRq = EnterOrderRq.createUpdateOrderRq(1,
+                security.getIsin(), 12,
+                LocalDateTime.now(), Side.SELL, 250, 15500, seller.getBrokerId(),
+                shareholder.getShareholderId(), 100);
 
-     assertThatNoException().isThrownBy(() -> security.updateOrder(updateOrderRq,
-     matcher));
+        assertThatNoException().isThrownBy(() -> security.updateOrder(updateOrderRq));
 
-     long buyer_expected_value = buyer_credit;
-     long seller_expected_value = seller_credit + 3925000;
+        long buyer_expected_value = buyer_credit;
+        long seller_expected_value = seller_credit + 3925000;
 
-     assertThat(buyer.getCredit()).isEqualTo(buyer_expected_value);
-     assertThat(seller.getCredit()).isEqualTo(seller_expected_value);
-     }
+        assertThat(buyer.getCredit()).isEqualTo(buyer_expected_value);
+        assertThat(seller.getCredit()).isEqualTo(seller_expected_value);
+    }
 
     @Test
     void delete_buy_iceberg() {
@@ -661,26 +655,25 @@ public class BrokerCreditTest1 {
         assertThat(seller.getCredit()).isEqualTo(seller_expected_value);
     }
 
-     @Test
-     void update_buy_iceberg_quantity() {
-     IcebergOrder order1 = new IcebergOrder(11, security, Side.BUY, 1000, 12000,
-     buyer, shareholder, 50);
-     IcebergOrder order2 = new IcebergOrder(12, security, Side.SELL, 1000, 15700,
-     seller, shareholder, 50);
-     security.getOrderBook().enqueue(order1);
-     security.getOrderBook().enqueue(order2);
+    @Test
+    void update_buy_iceberg_quantity() {
+        IcebergOrder order1 = new IcebergOrder(11, security, Side.BUY, 1000, 12000,
+                buyer, shareholder, 50);
+        IcebergOrder order2 = new IcebergOrder(12, security, Side.SELL, 1000, 15700,
+                seller, shareholder, 50);
+        security.getOrderBook().enqueue(order1);
+        security.getOrderBook().enqueue(order2);
 
-     EnterOrderRq updateOrderRq = EnterOrderRq.createUpdateOrderRq(1,
-     security.getIsin(), 11,
-     LocalDateTime.now(), Side.BUY, 1500, 14000, buyer.getBrokerId(),
-     shareholder.getShareholderId(), 100);
-     assertThatNoException().isThrownBy(() -> security.updateOrder(updateOrderRq,
-     matcher));
+        EnterOrderRq updateOrderRq = EnterOrderRq.createUpdateOrderRq(1,
+                security.getIsin(), 11,
+                LocalDateTime.now(), Side.BUY, 1500, 14000, buyer.getBrokerId(),
+                shareholder.getShareholderId(), 100);
+        assertThatNoException().isThrownBy(() -> security.updateOrder(updateOrderRq));
 
-     long buyer_expected_value = 1000000;
-     long seller_expected_value = seller_credit;
+        long buyer_expected_value = 1000000;
+        long seller_expected_value = seller_credit;
 
-     assertThat(buyer.getCredit()).isEqualTo(buyer_expected_value);
-     assertThat(seller.getCredit()).isEqualTo(seller_expected_value);
-     }
+        assertThat(buyer.getCredit()).isEqualTo(buyer_expected_value);
+        assertThat(seller.getCredit()).isEqualTo(seller_expected_value);
+    }
 }

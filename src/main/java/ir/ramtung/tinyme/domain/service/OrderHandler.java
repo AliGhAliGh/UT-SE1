@@ -23,7 +23,6 @@ public class OrderHandler {
     BrokerRepository brokerRepository;
     ShareholderRepository shareholderRepository;
     EventPublisher eventPublisher;
-    Matcher matcher;
 
     public OrderHandler(SecurityRepository securityRepository, BrokerRepository brokerRepository,
             ShareholderRepository shareholderRepository, EventPublisher eventPublisher, Matcher matcher) {
@@ -31,7 +30,6 @@ public class OrderHandler {
         this.brokerRepository = brokerRepository;
         this.shareholderRepository = shareholderRepository;
         this.eventPublisher = eventPublisher;
-        this.matcher = matcher;
     }
 
     private void publishResult(MatchResult matchResult, long reqId, long orderId, OrderEntryType type,
@@ -74,14 +72,14 @@ public class OrderHandler {
     }
 
     private void refreshQueue(Security security) {
-        var res = security.getOrderBook().refreshAllQueue(matcher);
+        var res = security.getOrderBook().refreshAllQueue(security);
         while (!res.isEmpty()) {
             for (var pair : res) {
                 var order = (StopLimitOrder) pair.getA();
                 publishResult(pair.getB(), order.getRequestId(), order.getOrderId(), OrderEntryType.ACTIVATED,
                         security);
             }
-            res = security.getOrderBook().refreshAllQueue(matcher);
+            res = security.getOrderBook().refreshAllQueue(security);
         }
     }
 
@@ -95,9 +93,9 @@ public class OrderHandler {
 
             MatchResult matchResult;
             if (enterOrderRq.getRequestType() == OrderEntryType.NEW_ORDER)
-                matchResult = security.newOrder(enterOrderRq, broker, shareholder, matcher);
+                matchResult = security.newOrder(enterOrderRq, broker, shareholder);
             else
-                matchResult = security.updateOrder(enterOrderRq, matcher);
+                matchResult = security.updateOrder(enterOrderRq);
 
             publishResult(matchResult, enterOrderRq.getRequestId(), enterOrderRq.getOrderId(),
                     enterOrderRq.getRequestType(), security);

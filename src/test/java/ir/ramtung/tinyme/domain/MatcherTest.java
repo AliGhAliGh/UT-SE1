@@ -5,7 +5,6 @@ import ir.ramtung.tinyme.domain.entity.*;
 import ir.ramtung.tinyme.domain.service.Matcher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.annotation.DirtiesContext;
@@ -26,8 +25,6 @@ public class MatcherTest {
     private Shareholder shareholder;
     private OrderBook orderBook;
     private List<Order> orders;
-    @Autowired
-    private Matcher matcher;
 
     @BeforeEach
     void setupOrderBook() {
@@ -46,8 +43,7 @@ public class MatcherTest {
                 new Order(7, security, Side.SELL, 285, 15810, broker, shareholder),
                 new Order(8, security, Side.SELL, 800, 15810, broker, shareholder),
                 new Order(9, security, Side.SELL, 340, 15820, broker, shareholder),
-                new Order(10, security, Side.SELL, 65, 15820, broker, shareholder)
-        );
+                new Order(10, security, Side.SELL, 65, 15820, broker, shareholder));
         orders.forEach(order -> orderBook.enqueue(order));
     }
 
@@ -55,7 +51,7 @@ public class MatcherTest {
     void new_sell_order_matches_completely_with_part_of_the_first_buy() {
         Order order = new Order(11, security, Side.SELL, 100, 15600, broker, shareholder);
         Trade trade = new Trade(security, 15700, 100, orders.get(0), order);
-        MatchResult result = matcher.match(order);
+        MatchResult result = Matcher.match(order);
         assertThat(result.remainder().getQuantity()).isEqualTo(0);
         assertThat(result.trades()).containsExactly(trade);
         assertThat(security.getOrderBook().getBuyQueue().getFirst().getQuantity()).isEqualTo(204);
@@ -65,7 +61,7 @@ public class MatcherTest {
     void new_sell_order_matches_partially_with_the_first_buy() {
         Order order = new Order(11, security, Side.SELL, 500, 15600, broker, shareholder);
         Trade trade = new Trade(security, 15700, 304, orders.get(0), order);
-        MatchResult result = matcher.match(order);
+        MatchResult result = Matcher.match(order);
         assertThat(result.remainder().getQuantity()).isEqualTo(196);
         assertThat(result.trades()).containsExactly(trade);
         assertThat(security.getOrderBook().getBuyQueue().getFirst().getOrderId()).isEqualTo(2);
@@ -76,7 +72,7 @@ public class MatcherTest {
         Order order = new Order(11, security, Side.SELL, 500, 15500, broker, shareholder);
         Trade trade1 = new Trade(security, 15700, 304, orders.get(0), order);
         Trade trade2 = new Trade(security, 15500, 43, orders.get(1), order.snapshotWithQuantity(196));
-        MatchResult result = matcher.match(order);
+        MatchResult result = Matcher.match(order);
         assertThat(result.remainder().getQuantity()).isEqualTo(153);
         assertThat(result.trades()).containsExactly(trade1, trade2);
         assertThat(security.getOrderBook().getBuyQueue().getFirst().getOrderId()).isEqualTo(3);
@@ -93,7 +89,7 @@ public class MatcherTest {
             totalTraded += o.getQuantity();
         }
 
-        MatchResult result = matcher.match(order);
+        MatchResult result = Matcher.match(order);
         assertThat(result.remainder().getQuantity()).isEqualTo(160);
         assertThat(result.trades()).isEqualTo(trades);
         assertThat(security.getOrderBook().getSellQueue()).isEmpty();
@@ -102,7 +98,7 @@ public class MatcherTest {
     @Test
     void new_buy_order_does_not_match() {
         Order order = new Order(11, security, BUY, 2000, 15500, broker, shareholder);
-        MatchResult result = matcher.match(order);
+        MatchResult result = Matcher.match(order);
         assertThat(result.remainder()).isEqualTo(order);
         assertThat(result.trades()).isEmpty();
     }
@@ -115,18 +111,19 @@ public class MatcherTest {
         orders = Arrays.asList(
                 new IcebergOrder(1, security, BUY, 450, 15450, broker, shareholder, 200),
                 new Order(2, security, BUY, 70, 15450, broker, shareholder),
-                new Order(3, security, BUY, 1000, 15400, broker, shareholder)
-        );
+                new Order(3, security, BUY, 1000, 15400, broker, shareholder));
         orders.forEach(order -> orderBook.enqueue(order));
         Order order = new Order(4, security, Side.SELL, 600, 15450, broker, shareholder);
         List<Trade> trades = List.of(
-                new Trade(security, 15450, 200, orders.get(0).snapshotWithQuantity(200), order.snapshotWithQuantity(600)),
+                new Trade(security, 15450, 200, orders.get(0).snapshotWithQuantity(200),
+                        order.snapshotWithQuantity(600)),
                 new Trade(security, 15450, 70, orders.get(1).snapshotWithQuantity(70), order.snapshotWithQuantity(400)),
-                new Trade(security, 15450, 200, orders.get(0).snapshotWithQuantity(200), order.snapshotWithQuantity(330)),
-                new Trade(security, 15450, 50, orders.get(0).snapshotWithQuantity(50), order.snapshotWithQuantity(130))
-        );
+                new Trade(security, 15450, 200, orders.get(0).snapshotWithQuantity(200),
+                        order.snapshotWithQuantity(330)),
+                new Trade(security, 15450, 50, orders.get(0).snapshotWithQuantity(50),
+                        order.snapshotWithQuantity(130)));
 
-        MatchResult result = matcher.match(order);
+        MatchResult result = Matcher.match(order);
 
         assertThat(result.remainder().getQuantity()).isEqualTo(80);
         assertThat(result.trades()).isEqualTo(trades);
@@ -137,11 +134,10 @@ public class MatcherTest {
         security = Security.builder().isin("TEST").build();
         shareholder.incPosition(security, 1_000);
         security.getOrderBook().enqueue(
-                new Order(1, security, Side.SELL, 100, 10, broker, shareholder)
-        );
+                new Order(1, security, Side.SELL, 100, 10, broker, shareholder));
 
-        Order order = new IcebergOrder(1, security, BUY, 120 , 10, broker, shareholder, 40 );
-        MatchResult result = matcher.execute(order, 0);
+        Order order = new IcebergOrder(1, security, BUY, 120, 10, broker, shareholder, 40);
+        MatchResult result = Matcher.execute(order, 0);
 
         assertThat(result.outcome()).isEqualTo(MatchingOutcome.EXECUTED);
         assertThat(result.trades()).hasSize(1);
