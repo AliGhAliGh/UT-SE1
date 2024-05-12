@@ -5,6 +5,9 @@ import ir.ramtung.tinyme.domain.entity.*;
 import ir.ramtung.tinyme.domain.service.Matcher;
 import ir.ramtung.tinyme.domain.service.OrderHandler;
 import ir.ramtung.tinyme.messaging.EventPublisher;
+import ir.ramtung.tinyme.messaging.request.ChangeMatchingStateRq;
+import ir.ramtung.tinyme.messaging.request.EnterOrderRq;
+import ir.ramtung.tinyme.messaging.request.MatchingState;
 import ir.ramtung.tinyme.repository.BrokerRepository;
 import ir.ramtung.tinyme.repository.SecurityRepository;
 import ir.ramtung.tinyme.repository.ShareholderRepository;
@@ -16,9 +19,11 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.annotation.DirtiesContext;
 
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 
+import static ir.ramtung.tinyme.domain.entity.Side.BUY;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
@@ -82,10 +87,84 @@ public class AuctionTest {
         public void opening_price_in_all_match_test() {
                 orders = Arrays.asList(
                                 new Order(6, security, Side.SELL, 200, 15800, brokerSell, shareholder),
-                                new Order(6, security, Side.BUY, 1, 15900, brokerBuy, shareholder),
-                                new Order(7, security, Side.BUY, 200, 15910, brokerBuy, shareholder));
+                                new Order(7, security, Side.BUY, 1, 15900, brokerBuy, shareholder),
+                                new Order(8, security, Side.BUY, 200, 15910, brokerBuy, shareholder));
                 orders.forEach(order -> orderBook.enqueue(order));
                 Matcher.setLastPriceExecuted(15920);
                 assertThat(security.getOpeningPrice(Matcher.getLastPriceExecuted())).isEqualTo(15910);
         }
+
+        @Test
+        public void more_quantity_preferred_over_being_close_to_last_price() {
+                orders = Arrays.asList(
+                                new Order(6, security, Side.SELL, 200, 15700, brokerSell, shareholder),
+                                new Order(1, security, Side.SELL, 300, 15800, brokerSell, shareholder),
+                                new Order(7, security, Side.BUY, 200, 15900, brokerBuy, shareholder),
+                                new Order(8, security, Side.BUY, 300, 15800, brokerBuy, shareholder));
+                orders.forEach(order -> orderBook.enqueue(order));
+                Matcher.setLastPriceExecuted(15700);
+                assertThat(security.getOpeningPrice(Matcher.getLastPriceExecuted())).isEqualTo(15800);
+        }
+
+        @Test
+        public void checking_several_number_of_trades_quantity() {
+                orders = Arrays.asList(
+                                new Order(6, security, Side.SELL, 200, 15600, brokerSell, shareholder),
+                                new Order(6, security, Side.SELL, 200, 15700, brokerSell, shareholder),
+                                new Order(1, security, Side.SELL, 300, 15800, brokerSell, shareholder),
+                                new Order(1, security, Side.SELL, 300, 15900, brokerSell, shareholder),
+                                new Order(7, security, Side.BUY, 200, 15900, brokerBuy, shareholder),
+                                new Order(7, security, Side.BUY, 200, 15700, brokerBuy, shareholder),
+                                new Order(8, security, Side.BUY, 200, 15600, brokerBuy, shareholder));
+                orders.forEach(order -> orderBook.enqueue(order));
+                Matcher.setLastPriceExecuted(15800);
+                assertThat(security.getOpeningPrice(Matcher.getLastPriceExecuted())).isEqualTo(15700);
+        }
+
+        @Test
+        public void order_will_not_trade_when_the_state_is_auction() {
+                orders = Arrays.asList(
+                                new Order(8, security, Side.SELL, 10, 15700, brokerSell, shareholder),
+                                new Order(6, security, Side.SELL, 10, 15800, brokerSell, shareholder));
+                orders.forEach(order -> orderBook.enqueue(order));
+                var req = EnterOrderRq.createNewOrderRq(1, security.getIsin(), 12, LocalDateTime.now(), BUY, 10, 15700,
+                                brokerBuy.getBrokerId(), shareholder.getShareholderId(), 0);
+                orderHandler.handleEnterOrder(req);
+                var req2 = new ChangeMatchingStateRq(security.getIsin(), MatchingState.AUCTION);
+                orderHandler.handleChangeState(req2);
+                req = EnterOrderRq.createNewOrderRq(2, security.getIsin(), 14, LocalDateTime.now(), BUY, 10, 15900,
+                                brokerBuy.getBrokerId(), shareholder.getShareholderId(), 0);
+                orderHandler.handleEnterOrder(req);
+                assertThat(security.getOpeningPrice(Matcher.getLastPriceExecuted())).isEqualTo(15800);
+                assertThat(orderBook.getBuyQueue().size()).isEqualTo(1);
+        }
+
+        // @Test // ----- Have not been completed yet
+        // public void check_broker_buy_credit() {
+        // Matcher.setLastPriceExecuted(15700);
+        // var req = EnterOrderRq.createNewOrderRq(1, security.getIsin(), 11,
+        // LocalDateTime.now(), BUY, 100, 15900,
+        // brokerBuy.getBrokerId(), shareholder.getShareholderId(), 0);
+        // orderHandler.handleEnterOrder(req);
+        //
+        // req = EnterOrderRq.createNewOrderRq(2, security.getIsin(), 12,
+        // LocalDateTime.now(), BUY, 100, 15800,
+        // brokerBuy.getBrokerId(), shareholder.getShareholderId(), 0);
+        // orderHandler.handleEnterOrder(req);
+        //
+        // var req2 = new ChangeMatchingStateRq(security.getIsin(),
+        // MatchingState.AUCTION);
+        // orderHandler.handleChangeState(req2);
+        //
+        // req = EnterOrderRq.createNewOrderRq(4, security.getIsin(), 14,
+        // LocalDateTime.now(), SELL, 150, 15600,
+        // brokerSell.getBrokerId(), shareholder.getShareholderId(), 0);
+        // orderHandler.handleEnterOrder(req);
+        // assertThat(security.getOpeningPrice(Matcher.getLastPriceExecuted())).isEqualTo(15700);
+        //
+        // assertThat(brokerBuy.getCredit()).isEqualTo(100_000_000L - 15700 * 150 - 50 *
+        // 15800);
+        //
+        // }
+
 }
