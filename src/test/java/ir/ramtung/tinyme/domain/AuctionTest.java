@@ -7,6 +7,7 @@ import ir.ramtung.tinyme.domain.service.OrderHandler;
 import ir.ramtung.tinyme.messaging.EventPublisher;
 import ir.ramtung.tinyme.messaging.event.*;
 import ir.ramtung.tinyme.messaging.request.ChangeMatchingStateRq;
+import ir.ramtung.tinyme.messaging.request.DeleteOrderRq;
 import ir.ramtung.tinyme.messaging.request.EnterOrderRq;
 import ir.ramtung.tinyme.messaging.request.MatchingState;
 import ir.ramtung.tinyme.repository.BrokerRepository;
@@ -219,5 +220,105 @@ public class AuctionTest {
                 verify(eventPublisher).publish(new TradeEvent(any(), security.getIsin(),
                                 50 * 15700, 50, 12,
                                 13));
+        }
+
+        @Test
+        public void updating_orders_price_will_change_the_opening_price() {
+                Matcher.setLastPriceExecuted(15800);
+                var req = EnterOrderRq.createNewOrderRq(2, security.getIsin(), 2,
+                        LocalDateTime.now(), SELL, 100, 15500,
+                        brokerSell.getBrokerId(), shareholder.getShareholderId(), 0);
+                orderHandler.handleEnterOrder(req);
+
+                var req2 = new ChangeMatchingStateRq(security.getIsin(),
+                        MatchingState.AUCTION);
+                orderHandler.handleChangeState(req2);
+
+                req = EnterOrderRq.createNewOrderRq(1, security.getIsin(), 1,
+                        LocalDateTime.now(), BUY, 100, 15700,
+                        brokerBuy.getBrokerId(), shareholder.getShareholderId(), 0);
+                orderHandler.handleEnterOrder(req);
+
+                assertThat(security.getOpeningPrice(Matcher.getLastPriceExecuted())).isEqualTo(15700);
+                assertThat(orderBook.getBuyQueue().size()).isEqualTo(1);
+
+                req = EnterOrderRq.createUpdateOrderRq(3, security.getIsin(), 1,
+                        LocalDateTime.now(), BUY, 100, 15900,
+                        brokerBuy.getBrokerId(), shareholder.getShareholderId(), 0);
+                orderHandler.handleEnterOrder(req);
+                assertThat(orderBook.getBuyQueue().size()).isEqualTo(1);
+                assertThat(security.getOpeningPrice(Matcher.getLastPriceExecuted())).isEqualTo(15800);
+        }
+
+        @Test
+        public void deleting_orders_will_change_the_opening_price() {
+                Matcher.setLastPriceExecuted(15800);
+                orders = Arrays.asList(
+                        new Order(1, security, SELL, 200, 15500, brokerSell, shareholder),
+                        new Order(2, security, SELL, 200, 15600, brokerSell, shareholder),
+                        new Order(3, security, BUY, 200, 15900, brokerBuy, shareholder),
+                        new Order(4, security, Side.BUY, 200, 15700, brokerBuy, shareholder));
+                orders.forEach(order -> orderBook.enqueue(order));
+                assertThat(security.getOpeningPrice(Matcher.getLastPriceExecuted())).isEqualTo(15700);
+                var req2 = new ChangeMatchingStateRq(security.getIsin(),
+                        MatchingState.AUCTION);
+                orderHandler.handleChangeState(req2);
+                var req = new DeleteOrderRq(1, security.getIsin(), SELL, 1);
+                orderHandler.handleDeleteOrder(req);
+                req = new DeleteOrderRq(2, security.getIsin(), BUY, 4);
+                orderHandler.handleDeleteOrder(req);
+                assertThat(orderBook.getBuyQueue().size()).isEqualTo(1);
+                assertThat(orderBook.getSellQueue().size()).isEqualTo(1);
+                assertThat(security.getOpeningPrice(Matcher.getLastPriceExecuted())).isEqualTo(15800);
+        }
+
+        @Test
+        public void iceberg_order_in_auction_state() {
+                Matcher.setLastPriceExecuted(15800);
+                orders = Arrays.asList(
+                        new Order(1, security, SELL, 250, 15600, brokerSell, shareholder),
+                        new IcebergOrder(12, security, SELL, 200, 15950, brokerSell, shareholder, 100));
+                orders.forEach(order -> orderBook.enqueue(order));
+                var req2 = new ChangeMatchingStateRq(security.getIsin(),
+                        MatchingState.AUCTION);
+                orderHandler.handleChangeState(req2);
+                var req = EnterOrderRq.createNewOrderRq(2, security.getIsin(), 11,
+                        LocalDateTime.now(), BUY, 300, 15900,
+                        brokerSell.getBrokerId(), shareholder.getShareholderId(), 250);
+                orderHandler.handleEnterOrder(req);
+                assertThat(orderBook.getBuyQueue().size()).isEqualTo(1);
+
+                assertThat(security.getOpeningPrice(Matcher.getLastPriceExecuted())).isEqualTo(15800);
+                req2 = new ChangeMatchingStateRq(security.getIsin(),
+                        MatchingState.CONTINUOUS);
+                orderHandler.handleChangeState(req2);
+                assertThat(orderBook.getSellQueue().size()).isEqualTo(1);
+                assertThat(orderBook.getBuyQueue().get(0).getQuantity()).isEqualTo(50);
+        }
+        @Test
+        public void stop_price_and_meq_orders_are_not_allowed_when_state_is_auction() {
+                Matcher.setLastPriceExecuted(15700);
+                var req = EnterOrderRq.createNewOrderRq(10, security.getIsin(), 110,
+                        LocalDateTime.now(), SELL, 100, 15500,
+                        brokerSell.getBrokerId(), shareholder.getShareholderId(), 0);
+                orderHandler.handleEnterOrder(req);
+                assertThat(orderBook.getSellQueue().size()).isEqualTo(1);
+                var req2 = new ChangeMatchingStateRq(security.getIsin(),
+                        MatchingState.AUCTION);
+                orderHandler.handleChangeState(req2);
+                req = EnterOrderRq.createNewOrderRq(1, security.getIsin(), 11,
+                        LocalDateTime.now(), BUY, 100, 15900,
+                        brokerBuy.getBrokerId(), shareholder.getShareholderId(), 0,90);
+                orderHandler.handleEnterOrder(req);
+                assertThat(orderBook.getBuyQueue().size()).isEqualTo(0);
+                assertThat(brokerBuy.getCredit()).isEqualTo(100_000_000L);
+                assertThat(orderBook.getSellQueue().get(0).getQuantity()).isEqualTo(100);
+                req = EnterOrderRq.createNewOrderRq(2, security.getIsin(), 12,
+                        LocalDateTime.now(), BUY, 100, 15900,
+                        brokerBuy.getBrokerId(), shareholder.getShareholderId(), 0,0,15600);
+                orderHandler.handleEnterOrder(req);
+                assertThat(orderBook.getBuyQueue().size()).isEqualTo(0);
+                assertThat(brokerBuy.getCredit()).isEqualTo(100_000_000L);
+                assertThat(orderBook.getSellQueue().get(0).getQuantity()).isEqualTo(100);
         }
 }
