@@ -57,7 +57,6 @@ public class OrderHandler {
                 var tradedQuantity = security.tradedQuantityAtPrice(openingPrice);
                 eventPublisher.publish(
                         new OpeningPriceEvent(LocalDateTime.now(), security.getIsin(), openingPrice, tradedQuantity));
-                break;
             default:
                 if (type == OrderEntryType.NEW_ORDER)
                     eventPublisher.publish(new OrderAcceptedEvent(reqId, orderId));
