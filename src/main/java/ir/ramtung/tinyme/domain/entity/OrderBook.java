@@ -99,7 +99,7 @@ public class OrderBook {
 
     public Order findMatchAuction(Side side, int openingPrice) {
         var queue = getQueue(side);
-        if (queue.getFirst().matches(openingPrice))
+        if (!queue.isEmpty() && queue.getFirst().matches(openingPrice))
             return queue.getFirst();
         else
             return null;

@@ -14,6 +14,7 @@ import lombok.Getter;
 import static ir.ramtung.tinyme.domain.entity.Side.BUY;
 
 import java.time.LocalDateTime;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -216,15 +217,19 @@ public class Security {
         return openingPrice;
     }
 
+    private Event getEvent(Trade trade) {
+        return (Event) new TradeEvent(LocalDateTime.now(), isin,
+                trade.getPrice(), trade.getQuantity(), trade.getBuy().getOrderId(),
+                trade.getSell().getOrderId());
+    }
+
     public List<Event> changeState(MatchingState state) {
-        List<Event> res = List.of(new SecurityStateChangedEvent(LocalDateTime.now(), isin, state));
+        List<Event> res = new LinkedList<Event>();
+        res.add(new SecurityStateChangedEvent(LocalDateTime.now(), isin, state));
+
         if (this.state == MatchingState.AUCTION) {
-            var events = Matcher.executeAcuction(this).stream()
-                    .map(trade -> (Event) new TradeEvent(LocalDateTime.now(), isin,
-                            trade.getPrice(), trade.getQuantity(), trade.getBuy().getOrderId(),
-                            trade.getSell().getOrderId()))
-                    .collect(Collectors.toList());
-            res.addAll(events);
+            var events = Matcher.executeAcuction(this);
+            res.addAll(events.stream().map(this::getEvent).collect(Collectors.toList()));
         }
         this.state = state;
         return res;

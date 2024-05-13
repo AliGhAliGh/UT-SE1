@@ -57,6 +57,7 @@ public class OrderHandler {
                 var tradedQuantity = security.tradedQuantityAtPrice(openingPrice);
                 eventPublisher.publish(
                         new OpeningPriceEvent(LocalDateTime.now(), security.getIsin(), openingPrice, tradedQuantity));
+                System.out.println(openingPrice + " : " + tradedQuantity);
             default:
                 if (type == OrderEntryType.NEW_ORDER)
                     eventPublisher.publish(new OrderAcceptedEvent(reqId, orderId));
@@ -120,10 +121,11 @@ public class OrderHandler {
     public void handleChangeState(ChangeMatchingStateRq changeMatchingStateRq) {
         Security security = securityRepository.findSecurityByIsin(changeMatchingStateRq.getSecurityIsin());
         if (security.getState() == MatchingState.CONTINUOUS
-                && changeMatchingStateRq.getTargetState() != MatchingState.CONTINUOUS) {
-            var events = security.changeState(changeMatchingStateRq.getTargetState());
-            events.forEach(event -> eventPublisher.publish(event));
-        }
+                && changeMatchingStateRq.getTargetState() == MatchingState.CONTINUOUS)
+            return;
+        var events = security.changeState(changeMatchingStateRq.getTargetState());
+        System.out.println("end");
+        events.forEach(event -> eventPublisher.publish(event));
     }
 
     private void validateEnterOrderRq(EnterOrderRq enterOrderRq) throws InvalidRequestException {

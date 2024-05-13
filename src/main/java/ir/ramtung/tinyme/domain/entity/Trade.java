@@ -40,7 +40,9 @@ public class Trade {
     }
 
     public void increaseBuyerDiffCredit() {
-        buy.getBroker().increaseCreditBy(buy.getQuantity() * buy.getPrice() - quantity * price);
+        var inc = quantity * (buy.getPrice() - price);
+        System.out.println("inc:" + inc);
+        buy.getBroker().increaseCreditBy(inc);
     }
 
     public void decreaseSellerCredit() {

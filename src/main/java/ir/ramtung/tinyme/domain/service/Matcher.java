@@ -137,7 +137,6 @@ public class Matcher {
                 sellOrder.decreaseQuantity(buyOrder.getQuantity());
             else {
                 orderBook.removeFirst(sellOrder.getSide());
-
                 refreshIcebergOrder(sellOrder);
             }
 
@@ -148,6 +147,7 @@ public class Matcher {
             buyOrder = orderBook.findMatchAuction(Side.BUY, openingPrice);
             sellOrder = orderBook.findMatchAuction(Side.SELL, openingPrice);
         }
+
         exchangePositions(trades);
         return trades;
     }
