@@ -120,7 +120,7 @@ public class Security {
         boolean losesPriority = updateOrderRq.getStopPrice() != order.getStopPrice();
         if (updateOrderRq.getSide() == Side.BUY) {
             order.getBroker().increaseCreditBy(order.getValue());
-            if (!order.getBroker().hasEnoughCredit(updateOrderRq.getQuantity() * updateOrderRq.getPrice())) {
+            if (!order.getBroker().hasEnoughCredit((long) updateOrderRq.getQuantity() * updateOrderRq.getPrice())) {
                 order.getBroker().decreaseCreditBy(order.getValue());
                 return MatchResult.notEnoughCredit();
             }
@@ -228,7 +228,7 @@ public class Security {
         res.add(new SecurityStateChangedEvent(LocalDateTime.now(), isin, state));
 
         if (this.state == MatchingState.AUCTION) {
-            var events = Matcher.executeAcuction(this);
+            var events = Matcher.executeAuction(this);
             res.addAll(events.stream().map(this::getEvent).collect(Collectors.toList()));
         }
         this.state = state;

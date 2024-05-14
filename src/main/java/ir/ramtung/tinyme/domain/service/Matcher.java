@@ -113,7 +113,7 @@ public class Matcher {
         }
     }
 
-    public static LinkedList<Trade> executeAcuction(Security security) {
+    public static LinkedList<Trade> executeAuction(Security security) {
         int openingPrice = security.getOpeningPrice();
         OrderBook orderBook = security.getOrderBook();
         LinkedList<Trade> trades = new LinkedList<>();
