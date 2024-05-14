@@ -127,14 +127,14 @@ public class Matcher {
             Trade trade = new Trade(security, openingPrice, tradableQuanitity, buyOrder, sellOrder);
 
             if (buyOrder.getQuantity() > tradableQuanitity)
-                buyOrder.decreaseQuantity(sellOrder.getQuantity());
+                buyOrder.decreaseQuantity(tradableQuanitity);
             else {
                 orderBook.removeFirst(buyOrder.getSide());
                 refreshIcebergOrder(buyOrder);
             }
 
             if (sellOrder.getQuantity() > tradableQuanitity)
-                sellOrder.decreaseQuantity(buyOrder.getQuantity());
+                sellOrder.decreaseQuantity(tradableQuanitity);
             else {
                 orderBook.removeFirst(sellOrder.getSide());
                 refreshIcebergOrder(sellOrder);
