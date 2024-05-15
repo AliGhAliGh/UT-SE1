@@ -193,20 +193,20 @@ public class AuctionTest {
                                 brokerBuy.getBrokerId(), shareholder.getShareholderId(), 0);
                 orderHandler.handleEnterOrder(req);
                 verify(eventPublisher).publish(new OrderAcceptedEvent(1, 11));
-                verify(eventPublisher).publish(new OpeningPriceEvent(any(), security.getIsin(), 15700, 0));
+                verify(eventPublisher).publish(new OpeningPriceEvent(security.getIsin(), 15700, 0));
 
                 req = EnterOrderRq.createNewOrderRq(2, security.getIsin(), 12,
                                 LocalDateTime.now(), BUY, 100, 15700,
                                 brokerBuy.getBrokerId(), shareholder.getShareholderId(), 0);
                 orderHandler.handleEnterOrder(req);
-                verify(eventPublisher).publish(new OpeningPriceEvent(any(), security.getIsin(), 15700, 0));
+                verify(eventPublisher).publish(new OpeningPriceEvent(security.getIsin(), 15700, 0));
                 verify(eventPublisher).publish(new OrderAcceptedEvent(2, 12));
 
                 req = EnterOrderRq.createNewOrderRq(3, security.getIsin(), 13,
                                 LocalDateTime.now(), SELL, 150, 15500,
                                 brokerBuy.getBrokerId(), shareholder.getShareholderId(), 0);
                 orderHandler.handleEnterOrder(req);
-                verify(eventPublisher).publish(new OpeningPriceEvent(any(), security.getIsin(), 15700, 150));
+                verify(eventPublisher).publish(new OpeningPriceEvent(security.getIsin(), 15700, 150));
                 verify(eventPublisher).publish(new OrderAcceptedEvent(3, 13));
 
                 req2 = new ChangeMatchingStateRq(security.getIsin(),

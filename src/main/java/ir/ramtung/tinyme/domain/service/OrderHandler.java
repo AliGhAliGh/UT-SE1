@@ -56,8 +56,7 @@ public class OrderHandler {
                 var openingPrice = security.getOpeningPrice();
                 var tradedQuantity = security.tradedQuantityAtPrice(openingPrice);
                 eventPublisher.publish(
-                        new OpeningPriceEvent(LocalDateTime.now(), security.getIsin(), openingPrice, tradedQuantity));
-                System.out.println(openingPrice + " : " + tradedQuantity);
+                        new OpeningPriceEvent(security.getIsin(), openingPrice, tradedQuantity));
             default:
                 if (type == OrderEntryType.NEW_ORDER)
                     eventPublisher.publish(new OrderAcceptedEvent(reqId, orderId));
@@ -98,7 +97,8 @@ public class OrderHandler {
 
             publishResult(matchResult, enterOrderRq.getRequestId(), enterOrderRq.getOrderId(),
                     enterOrderRq.getRequestType(), security);
-            refreshQueue(security);
+            if (!(security.getState() == MatchingState.AUCTION && enterOrderRq.getRequestType() == OrderEntryType.UPDATE_ORDER))
+                refreshQueue(security);
 
         } catch (InvalidRequestException ex) {
             eventPublisher.publish(

@@ -106,7 +106,14 @@ public class Security {
             order.markAsNew();
 
         orderBook.removeActiveOrder(updateOrderRq.getSide(), updateOrderRq.getOrderId());
-        MatchResult matchResult = Matcher.execute(order, updateOrderRq.getMinimumExecutionQuantity());
+        MatchResult matchResult;
+        if (this.state == MatchingState.CONTINUOUS) {
+            matchResult = Matcher.execute(order, updateOrderRq.getMinimumExecutionQuantity());
+        }
+        else {
+            orderBook.enqueue(order);
+            matchResult = MatchResult.executed(null, List.of());
+        }
         if (matchResult.outcome() != MatchingOutcome.EXECUTED) {
             orderBook.enqueue(originalOrder);
             if (updateOrderRq.getSide() == Side.BUY) {
@@ -125,7 +132,8 @@ public class Security {
                 return MatchResult.notEnoughCredit();
             }
         }
-        order.updateFromRequest(updateOrderRq);
+        if (this.state == MatchingState.CONTINUOUS)
+            order.updateFromRequest(updateOrderRq);
         if (updateOrderRq.getSide() == Side.BUY)
             order.getBroker().decreaseCreditBy(order.getValue());
 
