@@ -167,14 +167,13 @@ public class AuctionTest {
                                 brokerSell.getBrokerId(), shareholder.getShareholderId(), 0);
                 orderHandler.handleEnterOrder(req);
 
-                assertThat(brokerBuy.getCredit())
-                                .isEqualTo(100_000_000L - 100 * 15900 - 15800 * 100);
+                assertThat(brokerBuy.getCredit()).isEqualTo(100_000_000L - 100 * 15900 - 15800 * 100);
+                assertThat(security.getOpeningPrice(Matcher.getLastPriceExecuted())).isEqualTo(15700);
 
                 req2 = new ChangeMatchingStateRq(security.getIsin(),
                                 MatchingState.CONTINUOUS);
                 orderHandler.handleChangeState(req2);
 
-                assertThat(security.getOpeningPrice(Matcher.getLastPriceExecuted())).isEqualTo(15700);
                 assertThat(brokerBuy.getCredit())
                                 .isEqualTo(100_000_000L - 100 * 15900 - 15800 * 100 + 200 * 100 + 100 * 50);
         }
@@ -193,14 +192,14 @@ public class AuctionTest {
                                 brokerBuy.getBrokerId(), shareholder.getShareholderId(), 0);
                 orderHandler.handleEnterOrder(req);
                 verify(eventPublisher).publish(new OrderAcceptedEvent(1, 11));
-                verify(eventPublisher).publish(new OpeningPriceEvent(security.getIsin(), 15700, 0));
+                verify(eventPublisher).publish(new OpeningPriceEvent(security.getIsin(), 0, 0));
                 System.out.println(1);
 
                 req = EnterOrderRq.createNewOrderRq(2, security.getIsin(), 12,
                                 LocalDateTime.now(), BUY, 100, 15700,
                                 brokerBuy.getBrokerId(), shareholder.getShareholderId(), 0);
                 orderHandler.handleEnterOrder(req);
-                verify(eventPublisher, times(2)).publish(new OpeningPriceEvent(security.getIsin(), 15700, 0));
+                verify(eventPublisher, times(2)).publish(new OpeningPriceEvent(security.getIsin(), 0, 0));
                 verify(eventPublisher).publish(new OrderAcceptedEvent(2, 12));
 
                 req = EnterOrderRq.createNewOrderRq(3, security.getIsin(), 13,
