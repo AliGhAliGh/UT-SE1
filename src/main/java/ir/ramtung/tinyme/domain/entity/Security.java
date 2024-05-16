@@ -226,14 +226,13 @@ public class Security {
     }
 
     private Event getEvent(Trade trade) {
-        return (Event) new TradeEvent(LocalDateTime.now(), isin,
-                trade.getPrice(), trade.getQuantity(), trade.getBuy().getOrderId(),
+        return (Event) new TradeEvent(isin, trade.getPrice(), trade.getQuantity(), trade.getBuy().getOrderId(),
                 trade.getSell().getOrderId());
     }
 
     public List<Event> changeState(MatchingState state) {
         List<Event> res = new LinkedList<Event>();
-        res.add(new SecurityStateChangedEvent(LocalDateTime.now(), isin, state));
+        res.add(new SecurityStateChangedEvent(isin, state));
 
         if (this.state == MatchingState.AUCTION) {
             var events = Matcher.executeAuction(this);

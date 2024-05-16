@@ -183,11 +183,9 @@ public class AuctionTest {
         public void checking_events() {
                 Matcher.setLastPriceExecuted(15700);
 
-                var req2 = new ChangeMatchingStateRq(security.getIsin(),
-                                MatchingState.AUCTION);
+                var req2 = new ChangeMatchingStateRq(security.getIsin(), MatchingState.AUCTION);
                 orderHandler.handleChangeState(req2);
-                verify(eventPublisher).publish(
-                                new SecurityStateChangedEvent(any(), security.getIsin(), MatchingState.AUCTION));
+                verify(eventPublisher).publish(new SecurityStateChangedEvent(security.getIsin(), MatchingState.AUCTION));
                 var req = EnterOrderRq.createNewOrderRq(1, security.getIsin(), 11,
                                 LocalDateTime.now(), BUY, 100, 15900,
                                 brokerBuy.getBrokerId(), shareholder.getShareholderId(), 0);
@@ -212,14 +210,9 @@ public class AuctionTest {
                 req2 = new ChangeMatchingStateRq(security.getIsin(),
                                 MatchingState.CONTINUOUS);
                 orderHandler.handleChangeState(req2);
-                verify(eventPublisher).publish(
-                                new SecurityStateChangedEvent(any(), security.getIsin(), MatchingState.CONTINUOUS));
-                verify(eventPublisher).publish(new TradeEvent(any(), security.getIsin(),
-                                100 * 15700, 100, 11,
-                                13));
-                verify(eventPublisher).publish(new TradeEvent(any(), security.getIsin(),
-                                50 * 15700, 50, 12,
-                                13));
+                verify(eventPublisher).publish(new SecurityStateChangedEvent(security.getIsin(), MatchingState.CONTINUOUS));
+                verify(eventPublisher).publish(new TradeEvent(security.getIsin(), 100 * 15700, 100, 11, 13));
+                verify(eventPublisher).publish(new TradeEvent(security.getIsin(), 50 * 15700, 50, 12, 13));
         }
 
         @Test

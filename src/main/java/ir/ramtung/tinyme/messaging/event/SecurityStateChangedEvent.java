@@ -13,7 +13,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class SecurityStateChangedEvent extends Event {
-    private LocalDateTime time;
     private String securityIsin;
     private MatchingState state;
 }

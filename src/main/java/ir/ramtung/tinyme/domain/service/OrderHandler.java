@@ -55,8 +55,7 @@ public class OrderHandler {
             case ORDER_ENTERED:
                 var openingPrice = security.getOpeningPrice();
                 var tradedQuantity = security.tradedQuantityAtPrice(openingPrice);
-                eventPublisher.publish(
-                        new OpeningPriceEvent(security.getIsin(), openingPrice, tradedQuantity));
+                eventPublisher.publish(new OpeningPriceEvent(security.getIsin(), openingPrice, tradedQuantity));
             default:
                 if (type == OrderEntryType.NEW_ORDER)
                     eventPublisher.publish(new OrderAcceptedEvent(reqId, orderId));
