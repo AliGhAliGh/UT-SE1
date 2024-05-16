@@ -69,7 +69,7 @@ public class Security {
             }
 
             orderBook.enqueue(order);
-            openingPrice = getOpeningPrice(Matcher.getLastPriceExecuted());
+            openingPrice = getOpeningPrice();
             return MatchResult.orderEnteredInAuctionMode();
         }
 
@@ -174,7 +174,8 @@ public class Security {
         return Math.min(sells, buys);
     }
 
-    public int getOpeningPrice(int lastPrice) {
+    public int getOpeningPrice() {
+        int lastPrice = Matcher.getLastPriceExecuted();
         if (orderBook.getBuyQueue().isEmpty() || orderBook.getSellQueue().isEmpty()
                 || orderBook.getBuyQueue().getFirst().getPrice() < orderBook.getSellQueue().getFirst().getPrice())
             return 0;
