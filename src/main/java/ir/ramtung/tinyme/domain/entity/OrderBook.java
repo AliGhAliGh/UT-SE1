@@ -54,6 +54,11 @@ public class OrderBook {
         return side == Side.BUY ? deactivatedQueueBuy : deactivatedQueueSell;
     }
 
+    public boolean isInactiveStopLimitOrder(Side side, long orderId) {
+        var order = findByOrderId(side, orderId);
+        return order != null && order instanceof StopLimitOrder sl && !sl.isActive();
+    }
+
     public Order findByOrderId(Side side, long orderId) {
         var queue = getQueue(side);
         for (Order order : queue) {

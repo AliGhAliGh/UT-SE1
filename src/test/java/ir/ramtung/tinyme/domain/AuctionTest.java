@@ -5,6 +5,7 @@ import ir.ramtung.tinyme.domain.entity.*;
 import ir.ramtung.tinyme.domain.service.Matcher;
 import ir.ramtung.tinyme.domain.service.OrderHandler;
 import ir.ramtung.tinyme.messaging.EventPublisher;
+import ir.ramtung.tinyme.messaging.Message;
 import ir.ramtung.tinyme.messaging.event.*;
 import ir.ramtung.tinyme.messaging.request.ChangeMatchingStateRq;
 import ir.ramtung.tinyme.messaging.request.DeleteOrderRq;
@@ -28,6 +29,7 @@ import java.util.List;
 import static ir.ramtung.tinyme.domain.entity.Side.BUY;
 import static ir.ramtung.tinyme.domain.entity.Side.SELL;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -324,18 +326,18 @@ public class AuctionTest {
         public void check_trading_order_with_stop_price_after_auction_matching() {
                 Matcher.setLastPriceExecuted(15500);
                 var req = EnterOrderRq.createNewOrderRq(10, security.getIsin(), 110,
-                        LocalDateTime.now(), SELL, 200, 15700,
-                        brokerSell.getBrokerId(), shareholder.getShareholderId(), 0,0,15900);
+                                LocalDateTime.now(), SELL, 200, 15700,
+                                brokerSell.getBrokerId(), shareholder.getShareholderId(), 0, 0, 15900);
                 orderHandler.handleEnterOrder(req);
                 var req2 = new ChangeMatchingStateRq(security.getIsin(),
-                        MatchingState.AUCTION);
+                                MatchingState.AUCTION);
                 orderHandler.handleChangeState(req2);
                 req = EnterOrderRq.createNewOrderRq(1, security.getIsin(), 11,
-                        LocalDateTime.now(), BUY, 100, 15800,
-                        brokerBuy.getBrokerId(), shareholder.getShareholderId(), 0);
+                                LocalDateTime.now(), BUY, 100, 15800,
+                                brokerBuy.getBrokerId(), shareholder.getShareholderId(), 0);
                 orderHandler.handleEnterOrder(req);
                 req2 = new ChangeMatchingStateRq(security.getIsin(),
-                        MatchingState.CONTINUOUS);
+                                MatchingState.CONTINUOUS);
                 orderHandler.handleChangeState(req2);
                 assertThat(orderBook.getSellQueue().get(0).getQuantity()).isEqualTo(100);
                 assertThat(orderBook.getBuyQueue().size()).isEqualTo(0);
@@ -353,5 +355,47 @@ public class AuctionTest {
                 order = new Order(2, security, BUY, 200, 15400, brokerBuy, shareholder);
                 orderBook.enqueue(order);
                 assertThat(security.getOpeningPrice()).isEqualTo(0);
+        }
+
+        @Test
+        public void updating_and_deleting_stop_limit_orders_are_not_allowed_in_auction_state() {
+                Matcher.setLastPriceExecuted(15800);
+                var req2 = new ChangeMatchingStateRq(security.getIsin(),
+                                MatchingState.AUCTION);
+                orderHandler.handleChangeState(req2);
+
+                var req = EnterOrderRq.createNewOrderRq(1, security.getIsin(), 1,
+                                LocalDateTime.now(), SELL, 20, 15500,
+                                brokerSell.getBrokerId(), shareholder.getShareholderId(), 0, 0, 15600);
+                orderHandler.handleEnterOrder(req);
+
+                req = EnterOrderRq.createNewOrderRq(2, security.getIsin(), 2,
+                                LocalDateTime.now(), BUY, 10, 15900,
+                                brokerBuy.getBrokerId(), shareholder.getShareholderId(), 0, 0, 15700);
+                orderHandler.handleEnterOrder(req);
+                assertThat(security.getOpeningPrice()).isEqualTo(0);
+
+                req = EnterOrderRq.createUpdateOrderRq(3, security.getIsin(), 1,
+                                LocalDateTime.now(), SELL, 30, 15800,
+                                brokerSell.getBrokerId(), shareholder.getShareholderId(), 0, 15900);
+                orderHandler.handleEnterOrder(req);
+                verify(eventPublisher, atLeast(1)).publish(
+                                new OrderRejectedEvent(3, 1, List.of(Message.STOP_LIMIT_ORDER_IN_AUCTION_STATE)));
+
+                var req3 = new DeleteOrderRq(4, security.getIsin(), BUY, 2);
+                orderHandler.handleDeleteOrder(req3);
+                verify(eventPublisher, atLeast(1)).publish(
+                                new OrderRejectedEvent(4, 1, List.of(Message.STOP_LIMIT_ORDER_IN_AUCTION_STATE)));
+
+                req2 = new ChangeMatchingStateRq(security.getIsin(),
+                                MatchingState.AUCTION);
+                orderHandler.handleChangeState(req2);
+
+                assertThat(brokerSell.getCredit()).isEqualTo(100_000_000L);
+                assertThat(orderBook.getSellQueue().size()).isEqualTo(0);
+                assertThat(orderBook.getDeactivatedQueueSell().size()).isEqualTo(1);
+                assertThat(orderBook.getBuyQueue().size()).isEqualTo(1);
+                assertThat(orderBook.getDeactivatedQueueBuy().size()).isEqualTo(0);
+
         }
 }

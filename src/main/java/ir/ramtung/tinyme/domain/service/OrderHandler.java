@@ -151,6 +151,14 @@ public class OrderHandler {
                 errors.add(Message.QUANTITY_NOT_MULTIPLE_OF_LOT_SIZE);
             if (enterOrderRq.getPrice() % security.getTickSize() != 0)
                 errors.add(Message.PRICE_NOT_MULTIPLE_OF_TICK_SIZE);
+            if (security.getState() == MatchingState.AUCTION) {
+                if (enterOrderRq.getMinimumExecutionQuantity() > 0)
+                    errors.add(Message.MEQ_IN_AUCTION_STATE);
+                if (enterOrderRq.getStopPrice() > 0)
+                    errors.add(Message.STOP_LIMIT_ORDER_IN_AUCTION_STATE);
+                if (security.getOrderBook().isInactiveStopLimitOrder(enterOrderRq.getSide(), enterOrderRq.getOrderId()))
+                    errors.add(Message.UPDATE_STOP_LIMIT_ORDER_IN_AUCTION_STATE);
+            }
         }
 
         if (brokerRepository.findBrokerById(enterOrderRq.getBrokerId()) == null)
@@ -159,11 +167,7 @@ public class OrderHandler {
             errors.add(Message.UNKNOWN_SHAREHOLDER_ID);
         if (enterOrderRq.getPeakSize() < 0 || enterOrderRq.getPeakSize() >= enterOrderRq.getQuantity())
             errors.add(Message.INVALID_PEAK_SIZE);
-        if (security != null && enterOrderRq.getMinimumExecutionQuantity() > 0
-                && security.getState() == MatchingState.AUCTION)
-            errors.add(Message.MEQ_IN_AUCTION_STATE);
-        if (security != null && enterOrderRq.getStopPrice() > 0 && security.getState() == MatchingState.AUCTION)
-            errors.add(Message.STOP_LIMIT_ORDER_IN_AUCTION_STATE);
+
         if (!errors.isEmpty())
             throw new InvalidRequestException(errors);
     }
@@ -172,8 +176,14 @@ public class OrderHandler {
         List<String> errors = new LinkedList<>();
         if (deleteOrderRq.getOrderId() <= 0)
             errors.add(Message.INVALID_ORDER_ID);
-        if (securityRepository.findSecurityByIsin(deleteOrderRq.getSecurityIsin()) == null)
+
+        Security security = securityRepository.findSecurityByIsin(deleteOrderRq.getSecurityIsin());
+        if (security == null)
             errors.add(Message.UNKNOWN_SECURITY_ISIN);
+        else if (security.getOrderBook().isInactiveStopLimitOrder(deleteOrderRq.getSide(), deleteOrderRq.getOrderId())
+                && security.getState() == MatchingState.AUCTION)
+            errors.add(Message.DELETE_STOP_LIMIT_ORDER_IN_AUCTION_STATE);
+
         if (!errors.isEmpty())
             throw new InvalidRequestException(errors);
     }
