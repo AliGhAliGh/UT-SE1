@@ -10,11 +10,7 @@ import ir.ramtung.tinyme.messaging.request.*;
 import ir.ramtung.tinyme.repository.BrokerRepository;
 import ir.ramtung.tinyme.repository.SecurityRepository;
 import ir.ramtung.tinyme.repository.ShareholderRepository;
-//import lombok.var;
-
 import org.springframework.stereotype.Service;
-
-import java.time.LocalDateTime;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -56,6 +52,7 @@ public class OrderHandler {
                 var openingPrice = security.getOpeningPrice();
                 var tradedQuantity = security.tradedQuantityAtPrice(openingPrice);
                 eventPublisher.publish(new OpeningPriceEvent(security.getIsin(), openingPrice, tradedQuantity));
+                System.out.println("opening: " + openingPrice);
             default:
                 if (type == OrderEntryType.NEW_ORDER)
                     eventPublisher.publish(new OrderAcceptedEvent(reqId, orderId));
@@ -96,7 +93,8 @@ public class OrderHandler {
 
             publishResult(matchResult, enterOrderRq.getRequestId(), enterOrderRq.getOrderId(),
                     enterOrderRq.getRequestType(), security);
-            if (!(security.getState() == MatchingState.AUCTION && enterOrderRq.getRequestType() == OrderEntryType.UPDATE_ORDER))
+            if (!(security.getState() == MatchingState.AUCTION
+                    && enterOrderRq.getRequestType() == OrderEntryType.UPDATE_ORDER))
                 refreshQueue(security);
 
         } catch (InvalidRequestException ex) {
