@@ -28,7 +28,6 @@ import java.util.List;
 import static ir.ramtung.tinyme.domain.entity.Side.BUY;
 import static ir.ramtung.tinyme.domain.entity.Side.SELL;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -337,9 +336,10 @@ public class AuctionTest {
                                 LocalDateTime.now(), BUY, 100, 15800,
                                 brokerBuy.getBrokerId(), shareholder.getShareholderId(), 0);
                 orderHandler.handleEnterOrder(req);
-                req2 = new ChangeMatchingStateRq(security.getIsin(),
-                                MatchingState.CONTINUOUS);
+
+                req2 = new ChangeMatchingStateRq(security.getIsin(), MatchingState.CONTINUOUS);
                 orderHandler.handleChangeState(req2);
+
                 assertThat(orderBook.getBuyQueue().get(0).getQuantity()).isEqualTo(100);
                 assertThat(orderBook.getBuyQueue().size()).isEqualTo(1);
                 assertThat(orderBook.getSellQueue().size()).isEqualTo(1);

@@ -13,7 +13,6 @@ import lombok.Builder;
 import lombok.Getter;
 import static ir.ramtung.tinyme.domain.entity.Side.BUY;
 
-import java.time.LocalDateTime;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -109,8 +108,7 @@ public class Security {
         MatchResult matchResult;
         if (this.state == MatchingState.CONTINUOUS) {
             matchResult = Matcher.execute(order, updateOrderRq.getMinimumExecutionQuantity());
-        }
-        else {
+        } else {
             orderBook.enqueue(order);
             matchResult = MatchResult.executed(null, List.of());
         }
@@ -179,7 +177,7 @@ public class Security {
     public int getOpeningPrice(int lastPrice) {
         if (orderBook.getBuyQueue().isEmpty() || orderBook.getSellQueue().isEmpty()
                 || orderBook.getBuyQueue().getFirst().getPrice() < orderBook.getSellQueue().getFirst().getPrice())
-            return lastPrice;
+            return 0;
 
         var sellIt = orderBook.getSellQueue().descendingIterator();
         var buyIt = orderBook.getBuyQueue().iterator();
