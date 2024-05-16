@@ -29,8 +29,8 @@ public final class MatchResult {
         return new MatchResult(MatchingOutcome.NOT_SATISFY_MEQ, null, new LinkedList<>());
     }
 
-    public static MatchResult orderEnteredInAuctionMode() {
-        return new MatchResult(MatchingOutcome.ORDER_ENTERED, null, new LinkedList<>());
+    public static MatchResult orderChangedOpeningPrice() {
+        return new MatchResult(MatchingOutcome.CHANGE_OPENING_PRICE, null, new LinkedList<>());
     }
 
     private MatchResult(MatchingOutcome outcome, Order remainder, LinkedList<Trade> trades) {

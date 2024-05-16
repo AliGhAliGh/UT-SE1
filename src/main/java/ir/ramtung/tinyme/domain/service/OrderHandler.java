@@ -48,7 +48,7 @@ public class OrderHandler {
                 eventPublisher.publish(new OrderRejectedEvent(reqId, orderId,
                         List.of(Message.ORDER_NOT_SATISFIED_MEQ)));
                 break;
-            case ORDER_ENTERED:
+            case CHANGE_OPENING_PRICE:
                 var openingPrice = security.getOpeningPrice();
                 var tradedQuantity = security.tradedQuantityAtPrice(openingPrice);
                 eventPublisher.publish(new OpeningPriceEvent(security.getIsin(), openingPrice, tradedQuantity));
@@ -107,6 +107,9 @@ public class OrderHandler {
             validateDeleteOrderRq(deleteOrderRq);
             Security security = securityRepository.findSecurityByIsin(deleteOrderRq.getSecurityIsin());
             security.deleteOrder(deleteOrderRq);
+            if (security.getState() == MatchingState.AUCTION)
+                eventPublisher.publish(new OpeningPriceEvent(security.getIsin(), security.getOpeningPrice(),
+                        security.tradedQuantityAtPrice(security.getOpeningPrice())));
             eventPublisher.publish(new OrderDeletedEvent(deleteOrderRq.getRequestId(), deleteOrderRq.getOrderId()));
         } catch (InvalidRequestException ex) {
             eventPublisher.publish(

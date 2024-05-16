@@ -29,7 +29,6 @@ public class Security {
     private OrderBook orderBook = new OrderBook();
     @Builder.Default
     private MatchingState state = MatchingState.CONTINUOUS;
-    private int openingPrice;
 
     public MatchResult newOrder(EnterOrderRq enterOrderRq, Broker broker, Shareholder shareholder) {
         if (enterOrderRq.getSide() == Side.SELL && !shareholder.hasEnoughPositionsOn(this,
@@ -69,8 +68,7 @@ public class Security {
             }
 
             orderBook.enqueue(order);
-            openingPrice = getOpeningPrice();
-            return MatchResult.orderEnteredInAuctionMode();
+            return MatchResult.orderChangedOpeningPrice();
         }
 
         return Matcher.execute(order, meq);
@@ -110,13 +108,12 @@ public class Security {
             matchResult = Matcher.execute(order, updateOrderRq.getMinimumExecutionQuantity());
         } else {
             orderBook.enqueue(order);
-            matchResult = MatchResult.executed(null, List.of());
+            matchResult = MatchResult.orderChangedOpeningPrice();
         }
         if (matchResult.outcome() != MatchingOutcome.EXECUTED) {
             orderBook.enqueue(originalOrder);
-            if (updateOrderRq.getSide() == Side.BUY) {
+            if (updateOrderRq.getSide() == Side.BUY)
                 originalOrder.getBroker().decreaseCreditBy(originalOrder.getValue());
-            }
         }
         return matchResult;
     }
