@@ -5,7 +5,6 @@ import ir.ramtung.tinyme.domain.entity.*;
 import ir.ramtung.tinyme.domain.service.Matcher;
 import ir.ramtung.tinyme.domain.service.OrderHandler;
 import ir.ramtung.tinyme.messaging.EventPublisher;
-import ir.ramtung.tinyme.messaging.Message;
 import ir.ramtung.tinyme.messaging.event.*;
 import ir.ramtung.tinyme.messaging.request.ChangeMatchingStateRq;
 import ir.ramtung.tinyme.messaging.request.DeleteOrderRq;
@@ -29,7 +28,6 @@ import java.util.List;
 import static ir.ramtung.tinyme.domain.entity.Side.BUY;
 import static ir.ramtung.tinyme.domain.entity.Side.SELL;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -358,44 +356,33 @@ public class AuctionTest {
         }
 
         @Test
-        public void updating_and_deleting_stop_limit_orders_are_not_allowed_in_auction_state() {
-                Matcher.setLastPriceExecuted(15800);
+        public void updating_and_deleting_meq_after_entering_in_auction_state() {
+                orders = Arrays.asList(
+                                new Order(9, security, Side.SELL, 100, 15700, brokerSell, shareholder),
+                                new Order(10, security, Side.SELL, 250, 15900, brokerSell, shareholder));
+                orders.forEach(order -> orderBook.enqueue(order));
+                var req = EnterOrderRq.createNewOrderRq(1, security.getIsin(), 1,
+                                LocalDateTime.now(), BUY, 200, 15800,
+                                brokerSell.getBrokerId(), shareholder.getShareholderId(), 0, 100);
+                orderHandler.handleEnterOrder(req);
+                assertThat(orderBook.getSellQueue().size()).isEqualTo(1);
+                assertThat(orderBook.getBuyQueue().size()).isEqualTo(1);
+                assertThat(orderBook.getSellQueue().get(0).getQuantity()).isEqualTo(250);
+
                 var req2 = new ChangeMatchingStateRq(security.getIsin(),
                                 MatchingState.AUCTION);
                 orderHandler.handleChangeState(req2);
-
-                var req = EnterOrderRq.createNewOrderRq(1, security.getIsin(), 1,
-                                LocalDateTime.now(), SELL, 20, 15500,
-                                brokerSell.getBrokerId(), shareholder.getShareholderId(), 0, 0, 15600);
-                orderHandler.handleEnterOrder(req);
-
-                req = EnterOrderRq.createNewOrderRq(2, security.getIsin(), 2,
-                                LocalDateTime.now(), BUY, 10, 15900,
-                                brokerBuy.getBrokerId(), shareholder.getShareholderId(), 0, 0, 15700);
-                orderHandler.handleEnterOrder(req);
-                assertThat(security.getOpeningPrice()).isEqualTo(0);
-
                 req = EnterOrderRq.createUpdateOrderRq(3, security.getIsin(), 1,
-                                LocalDateTime.now(), SELL, 30, 15800,
-                                brokerSell.getBrokerId(), shareholder.getShareholderId(), 0, 15900);
+                                LocalDateTime.now(), BUY, 100, 15900,
+                                brokerSell.getBrokerId(), shareholder.getShareholderId(), 0);
                 orderHandler.handleEnterOrder(req);
-                verify(eventPublisher, atLeast(1)).publish(
-                                new OrderRejectedEvent(3, 1, List.of(Message.STOP_LIMIT_ORDER_IN_AUCTION_STATE)));
-
-                var req3 = new DeleteOrderRq(4, security.getIsin(), BUY, 2);
-                orderHandler.handleDeleteOrder(req3);
-                verify(eventPublisher, atLeast(1)).publish(
-                                new OrderRejectedEvent(4, 1, List.of(Message.STOP_LIMIT_ORDER_IN_AUCTION_STATE)));
-
                 req2 = new ChangeMatchingStateRq(security.getIsin(),
-                                MatchingState.AUCTION);
+                                MatchingState.CONTINUOUS);
                 orderHandler.handleChangeState(req2);
-
-                assertThat(brokerSell.getCredit()).isEqualTo(100_000_000L);
-                assertThat(orderBook.getSellQueue().size()).isEqualTo(0);
-                assertThat(orderBook.getDeactivatedQueueSell().size()).isEqualTo(1);
-                assertThat(orderBook.getBuyQueue().size()).isEqualTo(1);
-                assertThat(orderBook.getDeactivatedQueueBuy().size()).isEqualTo(0);
+                assertThat(orderBook.getBuyQueue().size()).isEqualTo(0);
+                assertThat(orderBook.getSellQueue().size()).isEqualTo(1);
+                assertThat(orderBook.getSellQueue().get(0).getQuantity()).isEqualTo(150);
 
         }
+
 }
