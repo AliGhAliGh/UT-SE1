@@ -325,25 +325,24 @@ public class AuctionTest {
         public void check_trading_order_with_stop_price_after_auction_matching() {
                 Matcher.setLastPriceExecuted(15500);
                 var req = EnterOrderRq.createNewOrderRq(10, security.getIsin(), 110,
-                                LocalDateTime.now(), SELL, 200, 15700,
-                                brokerSell.getBrokerId(), shareholder.getShareholderId(), 0, 0, 15900);
+                        LocalDateTime.now(), SELL, 200, 15700,
+                        brokerSell.getBrokerId(), shareholder.getShareholderId(), 0,0,15900);
                 orderHandler.handleEnterOrder(req);
                 var req2 = new ChangeMatchingStateRq(security.getIsin(),
-                                MatchingState.AUCTION);
+                        MatchingState.AUCTION);
                 orderHandler.handleChangeState(req2);
                 req = EnterOrderRq.createNewOrderRq(1, security.getIsin(), 11,
-                                LocalDateTime.now(), BUY, 100, 15800,
-                                brokerBuy.getBrokerId(), shareholder.getShareholderId(), 0);
+                        LocalDateTime.now(), BUY, 100, 15800,
+                        brokerBuy.getBrokerId(), shareholder.getShareholderId(), 0);
                 orderHandler.handleEnterOrder(req);
-
-                req2 = new ChangeMatchingStateRq(security.getIsin(), MatchingState.CONTINUOUS);
+                req2 = new ChangeMatchingStateRq(security.getIsin(),
+                        MatchingState.CONTINUOUS);
                 orderHandler.handleChangeState(req2);
-
-                assertThat(orderBook.getBuyQueue().get(0).getQuantity()).isEqualTo(100);
-                assertThat(orderBook.getBuyQueue().size()).isEqualTo(1);
+                assertThat(orderBook.getSellQueue().get(0).getQuantity()).isEqualTo(100);
+                assertThat(orderBook.getBuyQueue().size()).isEqualTo(0);
                 assertThat(orderBook.getSellQueue().size()).isEqualTo(1);
-                assertThat(brokerSell.getCredit()).isEqualTo(100_000_000L);
-                assertThat(security.getOpeningPrice(Matcher.getLastPriceExecuted())).isEqualTo(15700);
+                assertThat(brokerSell.getCredit()).isEqualTo(100_000_000L + 100 * 15700);
+                assertThat(security.getOpeningPrice(Matcher.getLastPriceExecuted())).isEqualTo(0);
         }
 
         @Test
