@@ -193,7 +193,6 @@ public class AuctionTest {
                 orderHandler.handleEnterOrder(req);
                 verify(eventPublisher).publish(new OrderAcceptedEvent(1, 11));
                 verify(eventPublisher).publish(new OpeningPriceEvent(security.getIsin(), 0, 0));
-                System.out.println(1);
 
                 req = EnterOrderRq.createNewOrderRq(2, security.getIsin(), 12,
                                 LocalDateTime.now(), BUY, 100, 15700,

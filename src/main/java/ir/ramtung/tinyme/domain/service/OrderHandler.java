@@ -52,7 +52,6 @@ public class OrderHandler {
                 var openingPrice = security.getOpeningPrice();
                 var tradedQuantity = security.tradedQuantityAtPrice(openingPrice);
                 eventPublisher.publish(new OpeningPriceEvent(security.getIsin(), openingPrice, tradedQuantity));
-                System.out.println("opening: " + openingPrice);
             default:
                 if (type == OrderEntryType.NEW_ORDER)
                     eventPublisher.publish(new OrderAcceptedEvent(reqId, orderId));
@@ -121,7 +120,6 @@ public class OrderHandler {
                 && changeMatchingStateRq.getTargetState() == MatchingState.CONTINUOUS)
             return;
         var events = security.changeState(changeMatchingStateRq.getTargetState());
-        System.out.println("end");
         events.forEach(event -> eventPublisher.publish(event));
     }
 
