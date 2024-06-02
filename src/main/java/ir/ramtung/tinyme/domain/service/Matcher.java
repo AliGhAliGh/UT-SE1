@@ -11,10 +11,6 @@ import java.util.ListIterator;
 
 @Service
 public class Matcher {
-    @Getter
-    @Setter
-    private static int lastPriceExecuted = 0;
-
     public static MatchResult match(Order newOrder) {
         OrderBook orderBook = newOrder.getSecurity().getOrderBook();
         LinkedList<Trade> trades = new LinkedList<>();
@@ -99,8 +95,8 @@ public class Matcher {
             for (Trade trade : trades) {
                 trade.getBuy().getShareholder().incPosition(trade.getSecurity(), trade.getQuantity());
                 trade.getSell().getShareholder().decPosition(trade.getSecurity(), trade.getQuantity());
+                trade.getSecurity().setLastPriceExecuted(trade.getPrice());
             }
-            lastPriceExecuted = trades.getLast().getPrice();
         }
     }
 

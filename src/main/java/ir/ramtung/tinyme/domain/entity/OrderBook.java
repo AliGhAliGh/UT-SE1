@@ -145,7 +145,7 @@ public class OrderBook {
         var res = new LinkedList<Pair<Order, MatchResult>>();
         while (it.hasNext()) {
             var order = (StopLimitOrder) it.next();
-            if (order.checkActivation(Matcher.getLastPriceExecuted())) {
+            if (order.checkActivation(security.getLastPriceExecuted())) {
                 it.remove();
                 order.activate();
                 res.add(new Pair<Order, MatchResult>(order, security.handleEnterOrder(order, 0)));

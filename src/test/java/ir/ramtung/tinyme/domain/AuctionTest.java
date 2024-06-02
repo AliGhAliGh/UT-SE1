@@ -67,7 +67,7 @@ public class AuctionTest {
                 brokerRepository.addBroker(brokerBuy);
                 brokerRepository.addBroker(brokerSell);
 
-                Matcher.setLastPriceExecuted(15700);
+                security.setLastPriceExecuted(15700);
 
                 orderBook = security.getOrderBook();
         }
@@ -80,11 +80,11 @@ public class AuctionTest {
                                 new Order(6, security, Side.BUY, 200, 15900, brokerBuy, shareholder),
                                 new Order(7, security, Side.BUY, 200, 15910, brokerBuy, shareholder));
                 orders.forEach(order -> orderBook.enqueue(order));
-                Matcher.setLastPriceExecuted(15850);
+                security.setLastPriceExecuted(15850);
                 assertThat(security.getOpeningPrice()).isEqualTo(15850);
-                Matcher.setLastPriceExecuted(15950);
+                security.setLastPriceExecuted(15950);
                 assertThat(security.getOpeningPrice()).isEqualTo(15900);
-                Matcher.setLastPriceExecuted(15750);
+                security.setLastPriceExecuted(15750);
                 assertThat(security.getOpeningPrice()).isEqualTo(15810);
         }
 
@@ -95,7 +95,7 @@ public class AuctionTest {
                                 new Order(7, security, Side.BUY, 1, 15900, brokerBuy, shareholder),
                                 new Order(8, security, Side.BUY, 200, 15910, brokerBuy, shareholder));
                 orders.forEach(order -> orderBook.enqueue(order));
-                Matcher.setLastPriceExecuted(15920);
+                security.setLastPriceExecuted(15920);
                 assertThat(security.getOpeningPrice()).isEqualTo(15910);
         }
 
@@ -107,7 +107,7 @@ public class AuctionTest {
                                 new Order(7, security, Side.BUY, 200, 15900, brokerBuy, shareholder),
                                 new Order(8, security, Side.BUY, 300, 15800, brokerBuy, shareholder));
                 orders.forEach(order -> orderBook.enqueue(order));
-                Matcher.setLastPriceExecuted(15700);
+                security.setLastPriceExecuted(15700);
                 assertThat(security.getOpeningPrice()).isEqualTo(15800);
         }
 
@@ -122,7 +122,7 @@ public class AuctionTest {
                                 new Order(7, security, Side.BUY, 200, 15700, brokerBuy, shareholder),
                                 new Order(8, security, Side.BUY, 200, 15600, brokerBuy, shareholder));
                 orders.forEach(order -> orderBook.enqueue(order));
-                Matcher.setLastPriceExecuted(15800);
+                security.setLastPriceExecuted(15800);
                 assertThat(security.getOpeningPrice()).isEqualTo(15700);
         }
 
@@ -146,7 +146,7 @@ public class AuctionTest {
 
         @Test
         public void check_broker_buy_credit() {
-                Matcher.setLastPriceExecuted(15700);
+                security.setLastPriceExecuted(15700);
 
                 var req2 = new ChangeMatchingStateRq(security.getIsin(),
                                 MatchingState.AUCTION);
@@ -180,7 +180,7 @@ public class AuctionTest {
 
         @Test
         public void checking_events() {
-                Matcher.setLastPriceExecuted(15700);
+                security.setLastPriceExecuted(15700);
 
                 var req2 = new ChangeMatchingStateRq(security.getIsin(), MatchingState.AUCTION);
                 orderHandler.handleChangeState(req2);
@@ -219,7 +219,7 @@ public class AuctionTest {
 
         @Test
         public void updating_orders_price_will_change_the_opening_price() {
-                Matcher.setLastPriceExecuted(15800);
+                security.setLastPriceExecuted(15800);
                 var req = EnterOrderRq.createNewOrderRq(2, security.getIsin(), 2,
                                 LocalDateTime.now(), SELL, 100, 15500,
                                 brokerSell.getBrokerId(), shareholder.getShareholderId(), 0);
@@ -249,7 +249,7 @@ public class AuctionTest {
 
         @Test
         public void deleting_orders_will_change_the_opening_price() {
-                Matcher.setLastPriceExecuted(15800);
+                security.setLastPriceExecuted(15800);
                 orders = Arrays.asList(
                                 new Order(1, security, SELL, 200, 15500, brokerSell, shareholder),
                                 new Order(2, security, SELL, 200, 15600, brokerSell, shareholder),
@@ -271,7 +271,7 @@ public class AuctionTest {
 
         @Test
         public void iceberg_order_in_auction_state() {
-                Matcher.setLastPriceExecuted(15800);
+                security.setLastPriceExecuted(15800);
                 orders = Arrays.asList(
                                 new Order(1, security, SELL, 250, 15600, brokerSell, shareholder),
                                 new IcebergOrder(12, security, SELL, 200, 15950, brokerSell, shareholder, 100));
@@ -295,7 +295,7 @@ public class AuctionTest {
 
         @Test
         public void stop_price_and_meq_orders_are_not_allowed_when_state_is_auction() {
-                Matcher.setLastPriceExecuted(15700);
+                security.setLastPriceExecuted(15700);
                 var req = EnterOrderRq.createNewOrderRq(10, security.getIsin(), 110,
                                 LocalDateTime.now(), SELL, 100, 15500,
                                 brokerSell.getBrokerId(), shareholder.getShareholderId(), 0);
@@ -322,7 +322,7 @@ public class AuctionTest {
 
         @Test
         public void check_trading_order_with_stop_price_after_auction_matching() {
-                Matcher.setLastPriceExecuted(15500);
+                security.setLastPriceExecuted(15500);
                 var req = EnterOrderRq.createNewOrderRq(10, security.getIsin(), 110,
                                 LocalDateTime.now(), SELL, 200, 15700,
                                 brokerSell.getBrokerId(), shareholder.getShareholderId(), 0, 0, 15900);
@@ -346,7 +346,7 @@ public class AuctionTest {
 
         @Test
         public void opening_price_will_be_zero_if_there_are_no_orders_to_trade() {
-                Matcher.setLastPriceExecuted(15450);
+                security.setLastPriceExecuted(15450);
                 var order = new Order(1, security, SELL, 200, 15500, brokerSell, shareholder);
                 orderBook.enqueue(order);
                 assertThat(security.getOpeningPrice()).isEqualTo(0);

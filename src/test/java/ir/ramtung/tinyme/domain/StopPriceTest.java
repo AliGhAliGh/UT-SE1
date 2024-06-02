@@ -68,7 +68,7 @@ public class StopPriceTest {
                 brokerRepository.addBroker(brokerBuy);
                 brokerRepository.addBroker(brokerSell);
 
-                Matcher.setLastPriceExecuted(15700);
+                security.setLastPriceExecuted(15700);
 
                 orderBook = security.getOrderBook();
                 orders = Arrays.asList(
@@ -105,7 +105,7 @@ public class StopPriceTest {
 
         @Test
         public void deleting_deactivated_order() {
-                Matcher.setLastPriceExecuted(15900);
+                security.setLastPriceExecuted(15900);
                 var req = EnterOrderRq.createNewOrderRq(1, security.getIsin(), 11, LocalDateTime.now(), SELL, 2, 15700,
                                 brokerSell.getBrokerId(), shareholder.getShareholderId(), 0, 0, 15800);
                 orderHandler.handleEnterOrder(req);
@@ -144,7 +144,7 @@ public class StopPriceTest {
 
         @Test
         public void checking_brokers_credit_just_after_activating() {
-                Matcher.setLastPriceExecuted(15600);
+                security.setLastPriceExecuted(15600);
                 brokerBuy.decreaseCreditBy(99_968_400L); // credit = 2 * 15800
 
                 var req = EnterOrderRq.createNewOrderRq(1, security.getIsin(), 11,
@@ -165,7 +165,7 @@ public class StopPriceTest {
 
         @Test
         public void update_reject_not_have_credit() {
-                Matcher.setLastPriceExecuted(15600);
+                security.setLastPriceExecuted(15600);
                 brokerBuy.decreaseCreditBy(99_968_400L); // credit = 2 * 15800
 
                 var req = EnterOrderRq.createNewOrderRq(1, security.getIsin(), 11,
@@ -229,7 +229,7 @@ public class StopPriceTest {
 
         @Test
         public void updating_quantity_and_price_of_deactivated_stop_price_order() {
-                Matcher.setLastPriceExecuted(15600);
+                security.setLastPriceExecuted(15600);
                 var req = EnterOrderRq.createNewOrderRq(2, security.getIsin(), 11, LocalDateTime.now(), BUY, 2, 15600,
                                 brokerBuy.getBrokerId(), shareholder.getShareholderId(), 0, 0, 15700);
                 orderHandler.handleEnterOrder(req);
@@ -288,7 +288,7 @@ public class StopPriceTest {
 
         @Test
         public void several_deactivated_order_get_activated_at_the_same_time() {
-                Matcher.setLastPriceExecuted(0);
+                security.setLastPriceExecuted(0);
                 var req = EnterOrderRq.createNewOrderRq(1, security.getIsin(), 11, LocalDateTime.now(), BUY, 6, 15700,
                                 brokerBuy.getBrokerId(), shareholder.getShareholderId(), 0, 0, 15800);
                 orderHandler.handleEnterOrder(req);
@@ -317,7 +317,7 @@ public class StopPriceTest {
 
         @Test
         public void several_deactivated_order_trades_with_each_other() {
-                Matcher.setLastPriceExecuted(0);
+                security.setLastPriceExecuted(0);
                 var req = EnterOrderRq.createNewOrderRq(1, security.getIsin(), 12, LocalDateTime.now(), BUY, 7, 15600,
                                 brokerBuy.getBrokerId(), shareholder.getShareholderId(), 0, 0, 15800);
                 orderHandler.handleEnterOrder(req);

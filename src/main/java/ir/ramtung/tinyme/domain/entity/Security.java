@@ -11,6 +11,8 @@ import ir.ramtung.tinyme.messaging.event.TradeEvent;
 import ir.ramtung.tinyme.messaging.request.MatchingState;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.Setter;
+
 import static ir.ramtung.tinyme.domain.entity.Side.BUY;
 
 import java.util.LinkedList;
@@ -20,6 +22,9 @@ import java.util.stream.Collectors;
 @Getter
 @Builder
 public class Security {
+    @Getter
+    @Setter
+    private int lastPriceExecuted = 0;
     private String isin;
     @Builder.Default
     private int tickSize = 1;
@@ -54,7 +59,7 @@ public class Security {
     }
 
     public MatchResult handleEnterOrder(Order order, int meq) {
-        if (order instanceof StopLimitOrder sl && !sl.checkActivation(Matcher.getLastPriceExecuted())) {
+        if (order instanceof StopLimitOrder sl && !sl.checkActivation(lastPriceExecuted)) {
             if (order.getSide() == BUY && !order.getBroker().hasEnoughCredit(order.getValue()))
                 return MatchResult.notEnoughCredit();
             sl.deactivate();
@@ -173,7 +178,7 @@ public class Security {
     }
 
     public int getOpeningPrice() {
-        int lastPrice = Matcher.getLastPriceExecuted();
+        int lastPrice = lastPriceExecuted;
         if (orderBook.getBuyQueue().isEmpty() || orderBook.getSellQueue().isEmpty()
                 || orderBook.getBuyQueue().getFirst().getPrice() < orderBook.getSellQueue().getFirst().getPrice())
             return 0;
