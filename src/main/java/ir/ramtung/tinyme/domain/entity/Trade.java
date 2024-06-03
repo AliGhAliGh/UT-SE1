@@ -35,20 +35,11 @@ public class Trade {
         return (long) price * quantity;
     }
 
-    public void increaseSellerCredit() {
+    public void increaseSellersCredit() {
         sell.getBroker().increaseCreditBy(getTradedValue());
     }
 
-    public void increaseBuyerDiffCredit() {
-        var inc = quantity * (buy.getPrice() - price);
-        buy.getBroker().increaseCreditBy(inc);
-    }
-
-    public void decreaseSellerCredit() {
-        sell.getBroker().decreaseCreditBy(getTradedValue());
-    }
-
-    public void decreaseBuyerCredit() {
+    public void decreaseBuyersCredit() {
         buy.getBroker().decreaseCreditBy(getTradedValue());
     }
 

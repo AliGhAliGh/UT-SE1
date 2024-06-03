@@ -134,10 +134,10 @@ public class DataLoader {
                 String[] line;
                 while ((line = csvReader.readNext()) != null) {
                     Security security = securityRepository.findSecurityByIsin(line[1]);
-                    Broker broker = brokerRepository.findBrokerById(Long.parseLong(line[5]));
-                    Shareholder shareholder = shareholderRepository.findShareholderById(Long.parseLong(line[6]));
-//orderId,isin,side,quantity,price,brokerId,shareholderId,entryTime,peakSize,displayedQuantity
-//0       1    2    3        4     5        6             7         8        9
+                    Broker broker = brokerRepository.findBrokerById(Long.parseLong(line[6]));
+                    Shareholder shareholder = shareholderRepository.findShareholderById(Long.parseLong(line[7]));
+//orderId,isin,side,initialQuantity,quantity,price,brokerId,shareholderId,entryTime,peakSize,displayedQuantity, minimumExecutionQuantity
+//0       1    2    3                4        5    6        7              8        9        10                 11
                     int peakSize = Integer.parseInt(line[8]);
                     Order order;
                     if (peakSize == 0) {
@@ -147,9 +147,11 @@ public class DataLoader {
                                 Side.parse(line[2]),
                                 Integer.parseInt(line[3]),
                                 Integer.parseInt(line[4]),
+                                Integer.parseInt(line[5]),
                                 broker,
                                 shareholder,
-                                LocalDateTime.parse(line[7]),
+                                LocalDateTime.parse(line[8]),
+                                Integer.parseInt(line[11]),
                                 OrderStatus.QUEUED);
                     } else {
                         order = new IcebergOrder(
@@ -158,11 +160,13 @@ public class DataLoader {
                                 Side.parse(line[2]),
                                 Integer.parseInt(line[3]),
                                 Integer.parseInt(line[4]),
+                                Integer.parseInt(line[5]),
                                 broker,
                                 shareholder,
-                                LocalDateTime.parse(line[7]),
-                                Integer.parseInt(line[8]),
+                                LocalDateTime.parse(line[8]),
                                 Integer.parseInt(line[9]),
+                                Integer.parseInt(line[10]),
+                                Integer.parseInt(line[11]),
                                 OrderStatus.QUEUED);
                     }
                     orders.addFirst(order);

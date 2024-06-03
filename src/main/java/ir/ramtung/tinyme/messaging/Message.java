@@ -14,14 +14,7 @@ public class Message {
     public static final String QUANTITY_NOT_MULTIPLE_OF_LOT_SIZE = "Quantity is not a multiple of security lot size";
     public static final String PRICE_NOT_MULTIPLE_OF_TICK_SIZE = "Price is not a multiple of security tick size";
     public static final String SELLER_HAS_NOT_ENOUGH_POSITIONS = "Seller has not enough positions";
-    public static final String ORDER_MEQ_NOT_POSITIVE = "Order MEQ is not-positive";
-    public static final String ORDER_QUANTITY_SMALLER_THAN_MEQ = "Order quantity is smaller that MEQ";
-    public static final String ORDER_NOT_SATISFIED_MEQ = "Order is not satisfied MEQ";
-    public static final String ACTIVE_ORDER_STOP_LIMIT_UPDATE = "Active Orders can't update their stop limit!";
-    public static final String MEQ_WITH_STOP_LIMIT_ORDER = "Stop limit orders can't have Minimum execution quantity!";
-    public static final String ICEBERG_WITH_STOP_LIMIT_ORDER = "Stop limit orders can't be an iceberg order!";
-    public static final String MEQ_IN_AUCTION_STATE = "MEQ is not allowed in auction state!";
-    public static final String STOP_LIMIT_ORDER_IN_AUCTION_STATE = "Stop limit order is not allowed in auction state!";
-    public static final String DELETE_STOP_LIMIT_ORDER_IN_AUCTION_STATE = "Delete Stop limit order is not allowed in auction state!";
-    public static final String UPDATE_STOP_LIMIT_ORDER_IN_AUCTION_STATE = "Update Stop limit order is not allowed in auction state!";
+    public static final String INVALID_MEQ="Minimum execution quantity can't be bigger than quantity";
+    public static final String MEQ_ON_UPDATE="Minimum execution quantity can only be specified for new orders";
+    public static final String MEQ_NOT_POSITIVE = "Minimum execution quantity must be positive or zero";
 }

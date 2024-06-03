@@ -1,4 +1,7 @@
-package ir.ramtung.tinyme.domain.entity;
+package ir.ramtung.tinyme.domain.service;
+
+import ir.ramtung.tinyme.domain.entity.Order;
+import ir.ramtung.tinyme.domain.entity.Trade;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -10,7 +13,7 @@ public final class MatchResult {
     private final LinkedList<Trade> trades;
 
     public static MatchResult executed(Order remainder, List<Trade> trades) {
-        return new MatchResult(MatchingOutcome.EXECUTED, remainder, new LinkedList<>(trades));
+        return new MatchResult(MatchingOutcome.OK, remainder, new LinkedList<>(trades));
     }
 
     public static MatchResult notEnoughCredit() {
@@ -21,22 +24,18 @@ public final class MatchResult {
         return new MatchResult(MatchingOutcome.NOT_ENOUGH_POSITIONS, null, new LinkedList<>());
     }
 
-    public static MatchResult deactivated() {
-        return new MatchResult(MatchingOutcome.DEACTIVATED, null, new LinkedList<>());
+    public static MatchResult minimumQuantityNotSatisfied() {
+        return new MatchResult(MatchingOutcome.MINIMUM_QUANTITY_NOT_SATISFIED, null, new LinkedList<>());
     }
 
-    public static MatchResult notMEQTrade() {
-        return new MatchResult(MatchingOutcome.NOT_SATISFY_MEQ, null, new LinkedList<>());
-    }
-
-    public static MatchResult orderChangedOpeningPrice() {
-        return new MatchResult(MatchingOutcome.CHANGE_OPENING_PRICE, null, new LinkedList<>());
-    }
-
-    private MatchResult(MatchingOutcome outcome, Order remainder, LinkedList<Trade> trades) {
+    public MatchResult(MatchingOutcome outcome, Order remainder, LinkedList<Trade> trades) {
         this.outcome = outcome;
         this.remainder = remainder;
         this.trades = trades;
+    }
+
+    public MatchResult(MatchingOutcome outcome, Order remainder) {
+        this(outcome, remainder, new LinkedList<>());
     }
 
     public MatchingOutcome outcome() {
@@ -53,10 +52,8 @@ public final class MatchResult {
 
     @Override
     public boolean equals(Object obj) {
-        if (obj == this)
-            return true;
-        if (obj == null || obj.getClass() != this.getClass())
-            return false;
+        if (obj == this) return true;
+        if (obj == null || obj.getClass() != this.getClass()) return false;
         var that = (MatchResult) obj;
         return Objects.equals(this.remainder, that.remainder) &&
                 Objects.equals(this.trades, that.trades);
@@ -73,5 +70,6 @@ public final class MatchResult {
                 "remainder=" + remainder + ", " +
                 "trades=" + trades + ']';
     }
+
 
 }

@@ -6,11 +6,14 @@ import ir.ramtung.tinyme.messaging.exception.InvalidRequestException;
 import ir.ramtung.tinyme.messaging.EventPublisher;
 import ir.ramtung.tinyme.messaging.TradeDTO;
 import ir.ramtung.tinyme.messaging.event.*;
-import ir.ramtung.tinyme.messaging.request.*;
+import ir.ramtung.tinyme.messaging.request.DeleteOrderRq;
+import ir.ramtung.tinyme.messaging.request.EnterOrderRq;
+import ir.ramtung.tinyme.messaging.request.OrderEntryType;
 import ir.ramtung.tinyme.repository.BrokerRepository;
 import ir.ramtung.tinyme.repository.SecurityRepository;
 import ir.ramtung.tinyme.repository.ShareholderRepository;
 import org.springframework.stereotype.Service;
+
 import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -21,59 +24,14 @@ public class OrderHandler {
     BrokerRepository brokerRepository;
     ShareholderRepository shareholderRepository;
     EventPublisher eventPublisher;
+    Matcher matcher;
 
-    public OrderHandler(SecurityRepository securityRepository, BrokerRepository brokerRepository,
-            ShareholderRepository shareholderRepository, EventPublisher eventPublisher, Matcher matcher) {
+    public OrderHandler(SecurityRepository securityRepository, BrokerRepository brokerRepository, ShareholderRepository shareholderRepository, EventPublisher eventPublisher, Matcher matcher) {
         this.securityRepository = securityRepository;
         this.brokerRepository = brokerRepository;
         this.shareholderRepository = shareholderRepository;
         this.eventPublisher = eventPublisher;
-    }
-
-    private void publishResult(MatchResult matchResult, long reqId, long orderId, OrderEntryType type,
-            Security security) {
-        if (type == OrderEntryType.ACTIVATED)
-            eventPublisher.publish(new OrderActivatedEvent(reqId, orderId));
-
-        switch (matchResult.outcome()) {
-            case NOT_ENOUGH_CREDIT:
-                eventPublisher.publish(new OrderRejectedEvent(reqId, orderId,
-                        List.of(Message.BUYER_HAS_NOT_ENOUGH_CREDIT)));
-                break;
-            case NOT_ENOUGH_POSITIONS:
-                eventPublisher.publish(new OrderRejectedEvent(reqId, orderId,
-                        List.of(Message.SELLER_HAS_NOT_ENOUGH_POSITIONS)));
-                break;
-            case NOT_SATISFY_MEQ:
-                eventPublisher.publish(new OrderRejectedEvent(reqId, orderId,
-                        List.of(Message.ORDER_NOT_SATISFIED_MEQ)));
-                break;
-            case CHANGE_OPENING_PRICE:
-                var openingPrice = security.getOpeningPrice();
-                var tradedQuantity = security.tradedQuantityAtPrice(openingPrice);
-                eventPublisher.publish(new OpeningPriceEvent(security.getIsin(), openingPrice, tradedQuantity));
-            default:
-                if (type == OrderEntryType.NEW_ORDER)
-                    eventPublisher.publish(new OrderAcceptedEvent(reqId, orderId));
-                else if (type == OrderEntryType.UPDATE_ORDER)
-                    eventPublisher.publish(new OrderUpdatedEvent(reqId, orderId));
-                if (!matchResult.trades().isEmpty())
-                    eventPublisher.publish(new OrderExecutedEvent(reqId, orderId,
-                            matchResult.trades().stream().map(TradeDTO::new).collect(Collectors.toList())));
-                break;
-        }
-    }
-
-    private void refreshQueue(Security security) {
-        var res = security.getOrderBook().refreshAllQueue(security);
-        while (!res.isEmpty()) {
-            for (var pair : res) {
-                var order = (StopLimitOrder) pair.getA();
-                publishResult(pair.getB(), order.getRequestId(), order.getOrderId(), OrderEntryType.ACTIVATED,
-                        security);
-            }
-            res = security.getOrderBook().refreshAllQueue(security);
-        }
+        this.matcher = matcher;
     }
 
     public void handleEnterOrder(EnterOrderRq enterOrderRq) {
@@ -86,19 +44,27 @@ public class OrderHandler {
 
             MatchResult matchResult;
             if (enterOrderRq.getRequestType() == OrderEntryType.NEW_ORDER)
-                matchResult = security.newOrder(enterOrderRq, broker, shareholder);
+                matchResult = security.newOrder(enterOrderRq, broker, shareholder, matcher);
             else
-                matchResult = security.updateOrder(enterOrderRq);
+                matchResult = security.updateOrder(enterOrderRq, matcher);
 
-            publishResult(matchResult, enterOrderRq.getRequestId(), enterOrderRq.getOrderId(),
-                    enterOrderRq.getRequestType(), security);
-            if (!(security.getState() == MatchingState.AUCTION
-                    && enterOrderRq.getRequestType() == OrderEntryType.UPDATE_ORDER))
-                refreshQueue(security);
-
+            if (matchResult.outcome() == MatchingOutcome.NOT_ENOUGH_CREDIT) {
+                eventPublisher.publish(new OrderRejectedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId(), List.of(Message.BUYER_HAS_NOT_ENOUGH_CREDIT)));
+                return;
+            }
+            if (matchResult.outcome() == MatchingOutcome.NOT_ENOUGH_POSITIONS) {
+                eventPublisher.publish(new OrderRejectedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId(), List.of(Message.SELLER_HAS_NOT_ENOUGH_POSITIONS)));
+                return;
+            }
+            if (enterOrderRq.getRequestType() == OrderEntryType.NEW_ORDER)
+                eventPublisher.publish(new OrderAcceptedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId()));
+            else
+                eventPublisher.publish(new OrderUpdatedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId()));
+            if (!matchResult.trades().isEmpty()) {
+                eventPublisher.publish(new OrderExecutedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId(), matchResult.trades().stream().map(TradeDTO::new).collect(Collectors.toList())));
+            }
         } catch (InvalidRequestException ex) {
-            eventPublisher.publish(
-                    new OrderRejectedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId(), ex.getReasons()));
+            eventPublisher.publish(new OrderRejectedEvent(enterOrderRq.getRequestId(), enterOrderRq.getOrderId(), ex.getReasons()));
         }
     }
 
@@ -107,23 +73,10 @@ public class OrderHandler {
             validateDeleteOrderRq(deleteOrderRq);
             Security security = securityRepository.findSecurityByIsin(deleteOrderRq.getSecurityIsin());
             security.deleteOrder(deleteOrderRq);
-            if (security.getState() == MatchingState.AUCTION)
-                eventPublisher.publish(new OpeningPriceEvent(security.getIsin(), security.getOpeningPrice(),
-                        security.tradedQuantityAtPrice(security.getOpeningPrice())));
             eventPublisher.publish(new OrderDeletedEvent(deleteOrderRq.getRequestId(), deleteOrderRq.getOrderId()));
         } catch (InvalidRequestException ex) {
-            eventPublisher.publish(
-                    new OrderRejectedEvent(deleteOrderRq.getRequestId(), deleteOrderRq.getOrderId(), ex.getReasons()));
+            eventPublisher.publish(new OrderRejectedEvent(deleteOrderRq.getRequestId(), deleteOrderRq.getOrderId(), ex.getReasons()));
         }
-    }
-
-    public void handleChangeState(ChangeMatchingStateRq changeMatchingStateRq) {
-        Security security = securityRepository.findSecurityByIsin(changeMatchingStateRq.getSecurityIsin());
-        if (security.getState() == MatchingState.CONTINUOUS
-                && changeMatchingStateRq.getTargetState() == MatchingState.CONTINUOUS)
-            return;
-        var events = security.changeState(changeMatchingStateRq.getTargetState());
-        events.forEach(event -> eventPublisher.publish(event));
     }
 
     private void validateEnterOrderRq(EnterOrderRq enterOrderRq) throws InvalidRequestException {
@@ -134,15 +87,6 @@ public class OrderHandler {
             errors.add(Message.ORDER_QUANTITY_NOT_POSITIVE);
         if (enterOrderRq.getPrice() <= 0)
             errors.add(Message.ORDER_PRICE_NOT_POSITIVE);
-        if (enterOrderRq.getMinimumExecutionQuantity() < 0)
-            errors.add(Message.ORDER_MEQ_NOT_POSITIVE);
-        if (enterOrderRq.getQuantity() < enterOrderRq.getMinimumExecutionQuantity())
-            errors.add(Message.ORDER_QUANTITY_SMALLER_THAN_MEQ);
-        if (enterOrderRq.getPeakSize() > 0 && enterOrderRq.getStopPrice() > 0)
-            errors.add(Message.ICEBERG_WITH_STOP_LIMIT_ORDER);
-        if (enterOrderRq.getMinimumExecutionQuantity() > 0 && enterOrderRq.getStopPrice() > 0)
-            errors.add(Message.MEQ_WITH_STOP_LIMIT_ORDER);
-
         Security security = securityRepository.findSecurityByIsin(enterOrderRq.getSecurityIsin());
         if (security == null)
             errors.add(Message.UNKNOWN_SECURITY_ISIN);
@@ -151,16 +95,7 @@ public class OrderHandler {
                 errors.add(Message.QUANTITY_NOT_MULTIPLE_OF_LOT_SIZE);
             if (enterOrderRq.getPrice() % security.getTickSize() != 0)
                 errors.add(Message.PRICE_NOT_MULTIPLE_OF_TICK_SIZE);
-            if (security.getState() == MatchingState.AUCTION) {
-                if (enterOrderRq.getMinimumExecutionQuantity() > 0)
-                    errors.add(Message.MEQ_IN_AUCTION_STATE);
-                if (enterOrderRq.getStopPrice() > 0)
-                    errors.add(Message.STOP_LIMIT_ORDER_IN_AUCTION_STATE);
-                if (security.getOrderBook().isInactiveStopLimitOrder(enterOrderRq.getSide(), enterOrderRq.getOrderId()))
-                    errors.add(Message.UPDATE_STOP_LIMIT_ORDER_IN_AUCTION_STATE);
-            }
         }
-
         if (brokerRepository.findBrokerById(enterOrderRq.getBrokerId()) == null)
             errors.add(Message.UNKNOWN_BROKER_ID);
         if (shareholderRepository.findShareholderById(enterOrderRq.getShareholderId()) == null)
@@ -168,6 +103,14 @@ public class OrderHandler {
         if (enterOrderRq.getPeakSize() < 0 || enterOrderRq.getPeakSize() >= enterOrderRq.getQuantity())
             errors.add(Message.INVALID_PEAK_SIZE);
 
+        if (enterOrderRq.getMinimumExecutionQuantity() != 0) {
+            if (enterOrderRq.getMinimumExecutionQuantity() < 0)
+                errors.add(Message.MEQ_NOT_POSITIVE);
+            if (enterOrderRq.getRequestType() != OrderEntryType.NEW_ORDER)
+                errors.add(Message.MEQ_ON_UPDATE);
+            if (enterOrderRq.getMinimumExecutionQuantity() > enterOrderRq.getQuantity())
+                errors.add(Message.INVALID_MEQ);
+        }
         if (!errors.isEmpty())
             throw new InvalidRequestException(errors);
     }
@@ -176,14 +119,8 @@ public class OrderHandler {
         List<String> errors = new LinkedList<>();
         if (deleteOrderRq.getOrderId() <= 0)
             errors.add(Message.INVALID_ORDER_ID);
-
-        Security security = securityRepository.findSecurityByIsin(deleteOrderRq.getSecurityIsin());
-        if (security == null)
+        if (securityRepository.findSecurityByIsin(deleteOrderRq.getSecurityIsin()) == null)
             errors.add(Message.UNKNOWN_SECURITY_ISIN);
-        else if (security.getOrderBook().isInactiveStopLimitOrder(deleteOrderRq.getSide(), deleteOrderRq.getOrderId())
-                && security.getState() == MatchingState.AUCTION)
-            errors.add(Message.DELETE_STOP_LIMIT_ORDER_IN_AUCTION_STATE);
-
         if (!errors.isEmpty())
             throw new InvalidRequestException(errors);
     }
