@@ -15,6 +15,7 @@ import lombok.Setter;
 
 import static ir.ramtung.tinyme.domain.entity.Side.BUY;
 
+import java.security.InvalidAlgorithmParameterException;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -170,61 +171,19 @@ public class Security {
     }
 
     public int tradedQuantityAtPrice(int price) {
-        var buys = orderBook.getBuyQueue().stream().filter(c -> c.getPrice() >= price)
-                .mapToInt(Order::getQuantity).sum();
-        var sells = orderBook.getSellQueue().stream().filter(c -> c.getPrice() <= price)
-                .mapToInt(Order::getQuantity).sum();
-        return Math.min(sells, buys);
+        try {
+            return new PriceCalculator(orderBook, lastPriceExecuted).tradedQuantityAtPrice(price);
+        } catch (InvalidAlgorithmParameterException err) {
+            return 0;
+        }
     }
 
     public int getOpeningPrice() {
-        int lastPrice = lastPriceExecuted;
-        if (orderBook.getBuyQueue().isEmpty() || orderBook.getSellQueue().isEmpty()
-                || orderBook.getBuyQueue().getFirst().getPrice() < orderBook.getSellQueue().getFirst().getPrice())
+        try {
+            return new PriceCalculator(orderBook, lastPriceExecuted).getOpeningPrice();
+        } catch (InvalidAlgorithmParameterException err) {
             return 0;
-
-        var sellIt = orderBook.getSellQueue().descendingIterator();
-        var buyIt = orderBook.getBuyQueue().iterator();
-        int maxTradedQuantity = 0, delta = 0, openingPrice = 0,
-                endPrice = orderBook.getSellQueue().getFirst().getPrice();
-        boolean isLastPriceChecked = false;
-        Order sell = sellIt.next();
-        Order buy = buyIt.next();
-        while (sell.getPrice() > buy.getPrice())
-            sell = sellIt.next();
-        while (true) {
-            var currentPrice = Math.max(sell.getPrice(), buy == null ? 0 : buy.getPrice());
-            if (!isLastPriceChecked && lastPrice >= currentPrice) {
-                currentPrice = lastPrice;
-                isLastPriceChecked = true;
-            }
-            if (currentPrice < endPrice)
-                break;
-            var currentTradedQuantity = tradedQuantityAtPrice(currentPrice);
-            if (currentTradedQuantity > maxTradedQuantity) {
-                maxTradedQuantity = currentTradedQuantity;
-                delta = Math.abs(lastPrice - currentPrice);
-                openingPrice = currentPrice;
-            } else if (currentTradedQuantity == maxTradedQuantity) {
-                if (Math.abs(lastPrice - currentPrice) < delta) {
-                    openingPrice = currentPrice;
-                    delta = Math.abs(lastPrice - currentPrice);
-                } else if (Math.abs(lastPrice - currentPrice) == delta) {
-                    openingPrice = Math.min(openingPrice, currentPrice);
-                }
-            }
-            if (currentPrice == sell.getPrice()) {
-                if (!sellIt.hasNext())
-                    break;
-                sell = sellIt.next();
-            } else if (buy != null && currentPrice == buy.getPrice()) {
-                if (buyIt.hasNext())
-                    buy = buyIt.next();
-                else
-                    buy = null;
-            }
         }
-        return openingPrice;
     }
 
     private Event getEvent(Trade trade) {
