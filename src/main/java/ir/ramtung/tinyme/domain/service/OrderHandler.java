@@ -78,7 +78,7 @@ public class OrderHandler {
 
     public void handleEnterOrder(EnterOrderRq enterOrderRq) {
         try {
-            validateEnterOrderRq(enterOrderRq);
+            Validator.validateEnterOrderRq(enterOrderRq, securityRepository, brokerRepository, shareholderRepository);
 
             Security security = securityRepository.findSecurityByIsin(enterOrderRq.getSecurityIsin());
             Broker broker = brokerRepository.findBrokerById(enterOrderRq.getBrokerId());
@@ -104,7 +104,7 @@ public class OrderHandler {
 
     public void handleDeleteOrder(DeleteOrderRq deleteOrderRq) {
         try {
-            validateDeleteOrderRq(deleteOrderRq);
+            Validator.validateDeleteOrderRq(deleteOrderRq, securityRepository);
             Security security = securityRepository.findSecurityByIsin(deleteOrderRq.getSecurityIsin());
             security.deleteOrder(deleteOrderRq);
             if (security.getState() == MatchingState.AUCTION)
@@ -124,67 +124,5 @@ public class OrderHandler {
             return;
         var events = security.changeState(changeMatchingStateRq.getTargetState());
         events.forEach(event -> eventPublisher.publish(event));
-    }
-
-    private void validateEnterOrderRq(EnterOrderRq enterOrderRq) throws InvalidRequestException {
-        List<String> errors = new LinkedList<>();
-        if (enterOrderRq.getOrderId() <= 0)
-            errors.add(Message.INVALID_ORDER_ID);
-        if (enterOrderRq.getQuantity() <= 0)
-            errors.add(Message.ORDER_QUANTITY_NOT_POSITIVE);
-        if (enterOrderRq.getPrice() <= 0)
-            errors.add(Message.ORDER_PRICE_NOT_POSITIVE);
-        if (enterOrderRq.getMinimumExecutionQuantity() < 0)
-            errors.add(Message.ORDER_MEQ_NOT_POSITIVE);
-        if (enterOrderRq.getQuantity() < enterOrderRq.getMinimumExecutionQuantity())
-            errors.add(Message.ORDER_QUANTITY_SMALLER_THAN_MEQ);
-        if (enterOrderRq.getPeakSize() > 0 && enterOrderRq.getStopPrice() > 0)
-            errors.add(Message.ICEBERG_WITH_STOP_LIMIT_ORDER);
-        if (enterOrderRq.getMinimumExecutionQuantity() > 0 && enterOrderRq.getStopPrice() > 0)
-            errors.add(Message.MEQ_WITH_STOP_LIMIT_ORDER);
-
-        Security security = securityRepository.findSecurityByIsin(enterOrderRq.getSecurityIsin());
-        if (security == null)
-            errors.add(Message.UNKNOWN_SECURITY_ISIN);
-        else {
-            if (enterOrderRq.getQuantity() % security.getLotSize() != 0)
-                errors.add(Message.QUANTITY_NOT_MULTIPLE_OF_LOT_SIZE);
-            if (enterOrderRq.getPrice() % security.getTickSize() != 0)
-                errors.add(Message.PRICE_NOT_MULTIPLE_OF_TICK_SIZE);
-            if (security.getState() == MatchingState.AUCTION) {
-                if (enterOrderRq.getMinimumExecutionQuantity() > 0)
-                    errors.add(Message.MEQ_IN_AUCTION_STATE);
-                if (enterOrderRq.getStopPrice() > 0)
-                    errors.add(Message.STOP_LIMIT_ORDER_IN_AUCTION_STATE);
-                if (security.getOrderBook().isInactiveStopLimitOrder(enterOrderRq.getSide(), enterOrderRq.getOrderId()))
-                    errors.add(Message.UPDATE_STOP_LIMIT_ORDER_IN_AUCTION_STATE);
-            }
-        }
-
-        if (brokerRepository.findBrokerById(enterOrderRq.getBrokerId()) == null)
-            errors.add(Message.UNKNOWN_BROKER_ID);
-        if (shareholderRepository.findShareholderById(enterOrderRq.getShareholderId()) == null)
-            errors.add(Message.UNKNOWN_SHAREHOLDER_ID);
-        if (enterOrderRq.getPeakSize() < 0 || enterOrderRq.getPeakSize() >= enterOrderRq.getQuantity())
-            errors.add(Message.INVALID_PEAK_SIZE);
-
-        if (!errors.isEmpty())
-            throw new InvalidRequestException(errors);
-    }
-
-    private void validateDeleteOrderRq(DeleteOrderRq deleteOrderRq) throws InvalidRequestException {
-        List<String> errors = new LinkedList<>();
-        if (deleteOrderRq.getOrderId() <= 0)
-            errors.add(Message.INVALID_ORDER_ID);
-
-        Security security = securityRepository.findSecurityByIsin(deleteOrderRq.getSecurityIsin());
-        if (security == null)
-            errors.add(Message.UNKNOWN_SECURITY_ISIN);
-        else if (security.getOrderBook().isInactiveStopLimitOrder(deleteOrderRq.getSide(), deleteOrderRq.getOrderId())
-                && security.getState() == MatchingState.AUCTION)
-            errors.add(Message.DELETE_STOP_LIMIT_ORDER_IN_AUCTION_STATE);
-
-        if (!errors.isEmpty())
-            throw new InvalidRequestException(errors);
     }
 }
