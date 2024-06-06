@@ -26,6 +26,7 @@ import java.util.stream.Collectors;
 public class Security {
     @Getter
     @Setter
+    @Builder.Default
     private int lastPriceExecuted = 0;
     private String isin;
     @Builder.Default

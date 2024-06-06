@@ -9,14 +9,10 @@ import ir.ramtung.tinyme.messaging.request.MatchingState;
 import ir.ramtung.tinyme.repository.BrokerRepository;
 import ir.ramtung.tinyme.repository.SecurityRepository;
 import ir.ramtung.tinyme.repository.ShareholderRepository;
-import lombok.Getter;
-import lombok.Setter;
-
 import org.springframework.stereotype.Service;
 
 import java.util.LinkedList;
 import java.util.List;
-import java.util.ListIterator;
 
 @Service
 public class Validator {
@@ -33,7 +29,8 @@ public class Validator {
     }
 
     public static void validateEnterOrderRq(EnterOrderRq enterOrderRq, SecurityRepository securityRepository,
-                                             BrokerRepository brokerRepository, ShareholderRepository shareholderRepository) throws InvalidRequestException {
+            BrokerRepository brokerRepository, ShareholderRepository shareholderRepository)
+            throws InvalidRequestException {
         List<String> errors = new LinkedList<>();
         if (enterOrderRq.getOrderId() <= 0)
             errors.add(Message.INVALID_ORDER_ID);
@@ -79,7 +76,8 @@ public class Validator {
             throw new InvalidRequestException(errors);
     }
 
-    public static void validateDeleteOrderRq(DeleteOrderRq deleteOrderRq, SecurityRepository securityRepository) throws InvalidRequestException {
+    public static void validateDeleteOrderRq(DeleteOrderRq deleteOrderRq, SecurityRepository securityRepository)
+            throws InvalidRequestException {
         List<String> errors = new LinkedList<>();
         if (deleteOrderRq.getOrderId() <= 0)
             errors.add(Message.INVALID_ORDER_ID);
