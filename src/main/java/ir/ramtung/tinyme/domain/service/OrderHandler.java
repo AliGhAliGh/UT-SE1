@@ -51,10 +51,9 @@ public class OrderHandler {
             else
                 matchResult = security.updateOrder(enterOrderRq);
 
-            PublishResult publishResult = new PublishResult(matchResult, enterOrderRq.getRequestId(),
+            new PublishResult(matchResult, enterOrderRq.getRequestId(),
                     enterOrderRq.getOrderId(),
-                    enterOrderRq.getRequestType(), security, eventPublisher);
-            publishResult.publishResult();
+                    enterOrderRq.getRequestType(), security, eventPublisher).publishResult();
 
             if (!(security.getState() == MatchingState.AUCTION
                     && enterOrderRq.getRequestType() == OrderEntryType.UPDATE_ORDER))
