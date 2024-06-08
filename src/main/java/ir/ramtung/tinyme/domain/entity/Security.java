@@ -1,5 +1,6 @@
 package ir.ramtung.tinyme.domain.entity;
 
+import ir.ramtung.tinyme.domain.service.Controller;
 import ir.ramtung.tinyme.domain.service.Validator;
 import ir.ramtung.tinyme.messaging.exception.InvalidRequestException;
 import ir.ramtung.tinyme.messaging.request.DeleteOrderRq;
@@ -39,8 +40,7 @@ public class Security {
     private MatchingState state = MatchingState.CONTINUOUS;
 
     public MatchResult newOrder(EnterOrderRq enterOrderRq, Broker broker, Shareholder shareholder) {
-        if (enterOrderRq.getSide() == Side.SELL && !shareholder.hasEnoughPositionsOn(this,
-                orderBook.totalSellQuantityByShareholder(shareholder) + enterOrderRq.getQuantity()))
+        if (!Controller.checkPosition(enterOrderRq, shareholder, this))
             return MatchResult.notEnoughPositions();
 
         Order order;
@@ -63,7 +63,7 @@ public class Security {
 
     public MatchResult handleEnterOrder(Order order, int meq) {
         if (order instanceof StopLimitOrder sl && !sl.checkActivation(lastPriceExecuted)) {
-            if (order.getSide() == BUY && !order.getBroker().hasEnoughCredit(order.getValue()))
+            if (!Controller.checkCredit(order))
                 return MatchResult.notEnoughCredit();
             sl.deactivate();
             orderBook.enqueueDeactivated(sl);
