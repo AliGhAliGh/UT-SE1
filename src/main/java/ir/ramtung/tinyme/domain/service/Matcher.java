@@ -88,12 +88,10 @@ public class Matcher {
     }
 
     public static LinkedList<Trade> executeAuction(Security security) {
-        int openingPrice = security.getOpeningPrice();
+        int openingPrice = security.getOpeningPrice(), tradableQuanitity;
         OrderBook orderBook = security.getOrderBook();
         LinkedList<Trade> trades = new LinkedList<>();
-        int tradableQuanitity;
-        Order buyOrder;
-        Order sellOrder;
+        Order buyOrder, sellOrder;
         while ((buyOrder = orderBook.findMatchAuction(Side.BUY, openingPrice)) != null
                 && (sellOrder = orderBook.findMatchAuction(Side.SELL, openingPrice)) != null) {
             tradableQuanitity = Math.min(buyOrder.getQuantity(), sellOrder.getQuantity());
