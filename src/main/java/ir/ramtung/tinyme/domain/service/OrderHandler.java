@@ -29,47 +29,14 @@ public class OrderHandler {
         this.eventPublisher = eventPublisher;
     }
 
-    private void publishResult(MatchResult matchResult, long reqId, long orderId, OrderEntryType type,
-            Security security) {
-        if (type == OrderEntryType.ACTIVATED)
-            eventPublisher.publish(new OrderActivatedEvent(reqId, orderId));
-
-        switch (matchResult.outcome()) {
-            case NOT_ENOUGH_CREDIT:
-                eventPublisher.publish(new OrderRejectedEvent(reqId, orderId,
-                        List.of(Message.BUYER_HAS_NOT_ENOUGH_CREDIT)));
-                break;
-            case NOT_ENOUGH_POSITIONS:
-                eventPublisher.publish(new OrderRejectedEvent(reqId, orderId,
-                        List.of(Message.SELLER_HAS_NOT_ENOUGH_POSITIONS)));
-                break;
-            case NOT_SATISFY_MEQ:
-                eventPublisher.publish(new OrderRejectedEvent(reqId, orderId,
-                        List.of(Message.ORDER_NOT_SATISFIED_MEQ)));
-                break;
-            case CHANGE_OPENING_PRICE:
-                var openingPrice = security.getOpeningPrice();
-                var tradedQuantity = security.tradedQuantityAtPrice(openingPrice);
-                eventPublisher.publish(new OpeningPriceEvent(security.getIsin(), openingPrice, tradedQuantity));
-            default:
-                if (type == OrderEntryType.NEW_ORDER)
-                    eventPublisher.publish(new OrderAcceptedEvent(reqId, orderId));
-                else if (type == OrderEntryType.UPDATE_ORDER)
-                    eventPublisher.publish(new OrderUpdatedEvent(reqId, orderId));
-                if (!matchResult.trades().isEmpty())
-                    eventPublisher.publish(new OrderExecutedEvent(reqId, orderId,
-                            matchResult.trades().stream().map(TradeDTO::new).collect(Collectors.toList())));
-                break;
-        }
-    }
-
     private void refreshQueue(Security security) {
         var res = security.getOrderBook().refreshAllQueue(security);
         while (!res.isEmpty()) {
             for (var pair : res) {
                 var order = (StopLimitOrder) pair.getA();
-                publishResult(pair.getB(), order.getRequestId(), order.getOrderId(), OrderEntryType.ACTIVATED,
-                        security);
+                PublishResult publishResult = new PublishResult(pair.getB(), order.getRequestId(), order.getOrderId(), OrderEntryType.ACTIVATED,
+                        security,eventPublisher);
+                publishResult.publishResult();
             }
             res = security.getOrderBook().refreshAllQueue(security);
         }
@@ -89,8 +56,10 @@ public class OrderHandler {
             else
                 matchResult = security.updateOrder(enterOrderRq);
 
-            publishResult(matchResult, enterOrderRq.getRequestId(), enterOrderRq.getOrderId(),
-                    enterOrderRq.getRequestType(), security);
+            PublishResult publishResult = new PublishResult(matchResult, enterOrderRq.getRequestId(), enterOrderRq.getOrderId(),
+                    enterOrderRq.getRequestType(), security, eventPublisher);
+            publishResult.publishResult();
+
             if (!(security.getState() == MatchingState.AUCTION
                     && enterOrderRq.getRequestType() == OrderEntryType.UPDATE_ORDER))
                 refreshQueue(security);
