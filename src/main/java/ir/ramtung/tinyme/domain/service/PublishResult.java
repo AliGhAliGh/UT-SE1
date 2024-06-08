@@ -7,13 +7,11 @@ import ir.ramtung.tinyme.messaging.Message;
 import ir.ramtung.tinyme.messaging.TradeDTO;
 import ir.ramtung.tinyme.messaging.event.*;
 import ir.ramtung.tinyme.messaging.request.OrderEntryType;
-import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
-//@AllArgsConstructor
 @NoArgsConstructor
 public class PublishResult {
     MatchResult matchResult;
@@ -22,8 +20,9 @@ public class PublishResult {
     OrderEntryType type;
     Security security;
     EventPublisher eventPublisher;
+
     public PublishResult(MatchResult matchResult, long reqId, long orderId, OrderEntryType type,
-                         Security security,EventPublisher eventPublisher) {
+            Security security, EventPublisher eventPublisher) {
         this.matchResult = matchResult;
         this.eventPublisher = eventPublisher;
         this.orderId = orderId;
@@ -31,6 +30,7 @@ public class PublishResult {
         this.security = security;
         this.type = type;
     }
+
     public void publishResult() {
         if (type == OrderEntryType.ACTIVATED)
             eventPublisher.publish(new OrderActivatedEvent(reqId, orderId));

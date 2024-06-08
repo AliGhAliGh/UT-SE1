@@ -1,18 +1,14 @@
 package ir.ramtung.tinyme.domain.service;
 
 import ir.ramtung.tinyme.domain.entity.*;
-import ir.ramtung.tinyme.messaging.Message;
 import ir.ramtung.tinyme.messaging.exception.InvalidRequestException;
 import ir.ramtung.tinyme.messaging.EventPublisher;
-import ir.ramtung.tinyme.messaging.TradeDTO;
 import ir.ramtung.tinyme.messaging.event.*;
 import ir.ramtung.tinyme.messaging.request.*;
 import ir.ramtung.tinyme.repository.BrokerRepository;
 import ir.ramtung.tinyme.repository.SecurityRepository;
 import ir.ramtung.tinyme.repository.ShareholderRepository;
 import org.springframework.stereotype.Service;
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class OrderHandler {
@@ -34,9 +30,8 @@ public class OrderHandler {
         while (!res.isEmpty()) {
             for (var pair : res) {
                 var order = (StopLimitOrder) pair.getA();
-                PublishResult publishResult = new PublishResult(pair.getB(), order.getRequestId(), order.getOrderId(), OrderEntryType.ACTIVATED,
-                        security,eventPublisher);
-                publishResult.publishResult();
+                new PublishResult(pair.getB(), order.getRequestId(), order.getOrderId(),
+                        OrderEntryType.ACTIVATED, security, eventPublisher).publishResult();
             }
             res = security.getOrderBook().refreshAllQueue(security);
         }
@@ -56,7 +51,8 @@ public class OrderHandler {
             else
                 matchResult = security.updateOrder(enterOrderRq);
 
-            PublishResult publishResult = new PublishResult(matchResult, enterOrderRq.getRequestId(), enterOrderRq.getOrderId(),
+            PublishResult publishResult = new PublishResult(matchResult, enterOrderRq.getRequestId(),
+                    enterOrderRq.getOrderId(),
                     enterOrderRq.getRequestType(), security, eventPublisher);
             publishResult.publishResult();
 

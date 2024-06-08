@@ -56,4 +56,11 @@ public class Trade {
         return buy.getBroker().hasEnoughCredit(getTradedValue());
     }
 
+    public boolean tryDecreaseBuyer() {
+        if (buyerHasEnoughCredit()) {
+            decreaseBuyerCredit();
+            return true;
+        }
+        return false;
+    }
 }

@@ -92,9 +92,9 @@ public class OrderBook {
         return deleteInQueue(queue, order.getOrderId());
     }
 
-    public Order matchWithFirst(Order newOrder) {
+    public Order tryMatchWithFirst(Order newOrder) {
         var queue = getQueue(newOrder.getSide().opposite());
-        if (newOrder.matches(queue.getFirst()))
+        if (!queue.isEmpty() && newOrder.matches(queue.getFirst()))
             return queue.getFirst();
         else
             return null;
@@ -117,10 +117,6 @@ public class OrderBook {
     public void restoreOrder(Order order) {
         removeActiveOrder(order.getSide(), order.getOrderId());
         putBack(order);
-    }
-
-    public boolean hasOrderOfType(Side side) {
-        return !getQueue(side).isEmpty();
     }
 
     public void removeFirst(Side side) {

@@ -86,10 +86,6 @@ public class Order {
         quantity -= amount;
     }
 
-    public void makeQuantityZero() {
-        quantity = 0;
-    }
-
     public boolean queuesBefore(Order order) {
         if (order.getSide() == Side.BUY) {
             return price > order.getPrice();
